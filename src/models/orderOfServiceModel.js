@@ -1,4 +1,4 @@
-const connection = require("./connection");
+const connection = require("../database/connection.js");
 const utilities = require("../utils/utils.js");
 
 const reloadSocketData = async (cod_order) => {

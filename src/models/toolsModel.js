@@ -1,4 +1,4 @@
-const connection = require("./connection");
+const connection = require("../database/connection");
 const moment = require("moment");
 const serviceModel = require("./servicesModel");
 

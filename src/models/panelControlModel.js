@@ -1,4 +1,4 @@
-const connection = require("./connection");
+const connection = require("../database/connection");
 const typesProduct = require("./typesProductModel");
 const statusService = require("./statusServiceModel");
 const statusPayment = require("./statusPaymentModel");

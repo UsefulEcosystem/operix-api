@@ -4,11 +4,20 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("users", {
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "tenants",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
       id: {
         primaryKey: true,
         autoIncrement: true,
         allowNull: false,
-        initialValue: 1000,
         type: Sequelize.INTEGER,
       },
       username: {
@@ -28,7 +37,24 @@ module.exports = {
         defaultValue: false,
         type: Sequelize.BOOLEAN,
       },
+      signature: {
+        allowNull: true,
+        type: Sequelize.TEXT,
+      },
+      createdAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn("NOW"),
+      },
+      updatedAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn("NOW"),
+      },
     });
+
+    await queryInterface.addIndex("users", ["tenant_id"]);
+    await queryInterface.addIndex("users", ["email"]);
   },
 
   async down(queryInterface, Sequelize) {

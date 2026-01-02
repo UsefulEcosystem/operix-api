@@ -3,8 +3,8 @@ const swaggerAutogen = require('swagger-autogen')({ openapi: '3.0.0', language: 
 const doc = {
   info: {
     version: "1.0.0",
-    title: "LIMA-REF-API",
-    description: "RestAPI de gerenciamento dos serviços e finanças da empresa Lima Refrigeração.",
+    title: "Operix API",
+    description: "API do sistema de gestão inteligente para serviços técnicos e manutenções (Operix).",
     contact: {
       name: 'João Pedro P. Lima',
       url: 'https://joaopedrosh.github.io/website',
@@ -17,7 +17,7 @@ const doc = {
       description: 'Desenvolvimento'
     },
     {
-      url: 'https://lima-ref-api.onrender.com',
+      url: 'Em breve',
       description: "Produção"
     }
   ],

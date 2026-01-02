@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "version": "1.0.0",
-    "title": "LIMA-REF-API",
-    "description": "RestAPI de gerenciamento dos serviços e finanças da empresa Lima Refrigeração.",
+    "title": "Operix API",
+    "description": "API do sistema de gestão inteligente para serviços técnicos e manutenções (Operix).",
     "contact": {
       "name": "João Pedro P. Lima",
       "url": "https://joaopedrosh.github.io/website",
@@ -16,11 +16,133 @@
       "description": "Desenvolvimento"
     },
     {
-      "url": "https://lima-ref-api.onrender.com",
+      "url": "Em breve",
       "description": "Produção"
     }
   ],
   "paths": {
+    "/expenses": {
+      "get": {
+        "tags": [
+          "Despesas"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Não autorizado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Despesas"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Criado"
+          },
+          "400": {
+            "description": "Solicitação Inválida"
+          },
+          "401": {
+            "description": "Não autorizado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "example": "any"
+                  },
+                  "type": {
+                    "example": "any"
+                  },
+                  "description": {
+                    "example": "any"
+                  },
+                  "value": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expenses/{id}": {
+      "delete": {
+        "tags": [
+          "Despesas"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Nenhum Conteúdo"
+          },
+          "401": {
+            "description": "Não autorizado"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/users": {
       "get": {
         "tags": [

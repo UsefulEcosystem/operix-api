@@ -1,4 +1,4 @@
-const connection = require("./connection");
+const connection = require("../database/connection");
 
 const reloadSocketData = async () => {
   const data = await getAll();

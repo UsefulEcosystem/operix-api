@@ -4,6 +4,16 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("services", {
+      tenant_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "tenants",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
       id: {
         primaryKey: true,
         autoIncrement: true,
@@ -63,7 +73,9 @@ module.exports = {
         allowNull: true,
         type: Sequelize.STRING,
       },
-    }) 
+    });
+
+    await queryInterface.addIndex("services", ["tenant_id"]);
   },
 
   async down(queryInterface, Sequelize) {

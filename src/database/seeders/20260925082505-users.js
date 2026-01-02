@@ -7,6 +7,7 @@ module.exports = {
       "users",
       [
         {
+          tenant_id: 1,
           username: process.env.SEEDER_ADMIN_USERNAME,
           email: process.env.SEEDER_ADMIN_EMAIL,
           password: process.env.SEEDER_ADMIN_PASSWORD,
