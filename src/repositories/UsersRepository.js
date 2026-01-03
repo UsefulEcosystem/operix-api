@@ -33,8 +33,8 @@ export default class UsersRepository {
     const queryUsername = "SELECT * FROM users WHERE username = $1";
 
     const connect = await connection.connect();
-    const checkEmail = await connect.query(queryEmail, user.email);
-    const checkUsername = await connect.query(queryUsername, user.username);
+    const checkEmail = await connect.query(queryEmail, [user.email]);
+    const checkUsername = await connect.query(queryUsername, [user.username]);
     connect.release();
 
     return [checkEmail.rowCount, checkUsername.rowCount];
@@ -64,9 +64,9 @@ export default class UsersRepository {
     const query = "SELECT * FROM users WHERE username = $1";
     const value = [user.username];
     const connect = await connection.connect();
-    const user = await connect.query(query, value);
+    const result = await connect.query(query, value);
     connect.release();
-    return user.rows;
+    return result.rows;
   }
 
   static async remove(user) {

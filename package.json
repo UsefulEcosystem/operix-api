@@ -17,6 +17,9 @@
     "swagger": "node swagger.js",
     "test": "jest"
   },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -43,6 +46,7 @@
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
     "sequelize-cli": "^6.6.1",
-    "swagger-autogen": "^2.23.7"
+    "swagger-autogen": "^2.23.7",
+    "supertest": "^6.3.3"
   }
 }

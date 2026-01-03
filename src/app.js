@@ -28,4 +28,4 @@ app.use(function (_req, res, next) {
 }) 
 app.use(router) 
 
-export default {server, io} 
+export default {server, io, app} 

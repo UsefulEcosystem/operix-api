@@ -1,6 +1,7 @@
 import { Router, json } from "express";
 import { serve, setup } from 'swagger-ui-express';
 import fs from "fs";
+import path from 'path';
 
 import UsersController from "./controllers/UsersController.js";
 import ServicesController from "./controllers/ServicesController.js";
@@ -23,7 +24,7 @@ import TypesProductMiddleware from "./middlewares/TypesProductMiddleware.js";
 import ExpensesMiddleware from "./middlewares/ExpensesMiddleware.js";
 
 const swaggerFile = JSON.parse(
-  fs.readFileSync(new URL("../swagger-output.json", import.meta.url))
+  fs.readFileSync(path.resolve(process.cwd(), 'swagger-output.json'))
 );
 const router = Router();
 

@@ -1,6 +1,7 @@
 import UsersRepository from "../repositories/UsersRepository.js";
 import ValidationError from "../utils/ValidationError.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 export default class UsersService {
   static async getAll() {
@@ -27,15 +28,15 @@ export default class UsersService {
     }
 
     const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(password, salt);
-    user.passwordHash = passwordHash;
+    const passwordHash = await bcrypt.hash(user.password, salt);
+    user.password = passwordHash;
 
     return UsersRepository.register(user);
   }
 
   static async login(user) {
-    const userResult = UsersRepository.login(user);
-    const userRow = userResult.rows[0] ?? null;
+    const userResult = await UsersRepository.login(user);
+    const userRow = userResult[0] ?? null;
 
     if (!userRow) {
       throw new ValidationError("Nome de usuário ou Senha incorreta.", 404);
@@ -45,9 +46,7 @@ export default class UsersService {
       throw new ValidationError("Nome de usuário ou Senha incorreta.", 404);
     }
 
-    const login = UsersRepository.login(user);
-
-    return await this.signToken(user, login);
+    return await this.signToken(user, userRow);
   }
 
   static async signToken(user, login) {
