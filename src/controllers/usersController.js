@@ -1,5 +1,6 @@
-import UsersService from "../services/usersService.js";
 import bcrypt from "bcrypt";
+import UsersService from "../services/usersService.js";
+import User from "../models/Users.js";
 
 class UsersController {
   static async getAll(_req, res) {
@@ -8,63 +9,29 @@ class UsersController {
   }
 
   static async getSignature(req, res) {
-    const { id } = req.params;
-    const users = await UsersService.getSignature(id);
+    const user = User.fromRequestParams(req.params);
+    const users = await UsersService.getSignature(user);
     return res.status(200).json(users);
   }
 
   static async register(req, res) {
-    const { tenantname, username, email, password, admin, signature } = req.body;
-
-  const checkExists = await UsersService.checkUsersExists(email, username);
-
-    if (checkExists[0] > 0 && checkExists[1] > 0) {
-      return res
-        .status(422)
-        .json({ msg: "Este nome de usuário e email já estão cadastrados." });
-    }
-
-    if (checkExists[0] > 0) {
-      return res.status(422).json({ msg: "Este email já tem uma conta ativa." });
-    }
-
-    if (checkExists[1] > 0) {
-      return res
-        .status(422)
-        .json({ msg: "Este nome de usuário já está sendo utilizado." });
-    }
-
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const dataUser = { username, email, passwordHash, admin, signature };
-
     try {
-      const register = await UsersService.register(dataUser);
+      const user = User.fromRequest(req.body);
+      const register = await UsersService.register(user);
       return res.status(200).json(register);
     } catch (error) {
-      return res.status(500).json({ msg: "Erro ao tentar registrar usuário." });
+      res.status(error.status || 500).json({ msg: error.message });
     }
   }
 
   static async login(req, res) {
     try {
-    const loginResult = await UsersService.login(req.body);
-
-      if (loginResult === false) {
-        return res
-          .status(404)
-          .json({ msg: "Nome de usuário ou Senha incorreta." });
-      }
-
-      try {
-        const response = await UsersService.signToken(req.body.remember, loginResult);
-        return res.status(200).json({ token: response.token, user: response.userData });
-      } catch (error) {
-        return res.status(500).json({ msg: "Erro na assinatura do token" });
-      }
+      const user = User.fromRequestLogin(req.body);
+      const login = await UsersService.login(user);
+      const response = await UsersService.signToken(user, login);
+      return res.status(200).json({ token: response.token, user: response.userData });
     } catch (error) {
-      return res.status(404).json({ msg: "Erro ao tentar realizar login." });
+      res.status(error.status || 500).json({ msg: error.message });
     }
   }
 

@@ -1,5 +1,7 @@
+
 import connection from "../database/connection.js";
 import bcrypt from "bcrypt";
+import ValidationError from "../utils/ValidationError.js";
 
 class UsersRepository {
   static async getAll() {
@@ -11,37 +13,39 @@ class UsersRepository {
     return users.rows;
   }
 
-  static async getSignature(id) {
+  static async getSignature(user) {
     const connect = await connection.connect();
     const users = await connect.query(
-      `SELECT signature FROM users WHERE id = ${id}`
+      `SELECT signature FROM users WHERE id = ${user.id}`
     );
     connect.release();
     return users.rows[0].signature;
   }
 
-  static async checkUsersExists(email, username) {
+  static async checkUsersExists(user) {
     const queryEmail = "SELECT * FROM users WHERE email = $1";
     const queryUsername = "SELECT * FROM users WHERE username = $1";
 
-    const valueEmail = [email];
-    const valueUsername = [username];
-
     const connect = await connection.connect();
-    const checkEmail = await connect.query(queryEmail, valueEmail);
-    const checkUsername = await connect.query(queryUsername, valueUsername);
+    const checkEmail = await connect.query(queryEmail, user.email);
+    const checkUsername = await connect.query(queryUsername, user.username);
     connect.release();
 
     return [checkEmail.rowCount, checkUsername.rowCount];
   }
 
-  static async register(request) {
-    const { tenant_id, username, email, passwordHash, admin, signature } = request;
-
+  static async register(user) {
     const query =
       "INSERT INTO users (tenant_id, username, email, password, admin, signature) VALUES ($1, $2, $3, $4, $5, $6)";
 
-    const values = [tenant_id, username, email, passwordHash, admin, signature];
+    const values = [
+      user.tenant_id, 
+      user.username, 
+      user.email, 
+      user.password, 
+      user.admin, 
+      user.signature
+    ];
 
     const connect = await connection.connect();
     const register = await connect.query(query, values);
@@ -50,22 +54,13 @@ class UsersRepository {
     return register.rows;
   }
 
-  static async login(request) {
-    const { username, password } = request;
+  static async login(user) {
     const query = "SELECT * FROM users WHERE username = $1";
-    const value = [username];
+    const value = [user.username];
     const connect = await connection.connect();
     const user = await connect.query(query, value);
     connect.release();
-
-    if (!user.rows[0]) {
-      return false;
-    }
-    const checkPassword = await bcrypt.compare(password, user.rows[0].password);
-    if (!checkPassword) {
-      return false;
-    }
-    return user.rows[0];
+    return user.rows;
   }
 
 
