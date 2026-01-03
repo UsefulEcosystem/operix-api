@@ -51,7 +51,6 @@ export default class UsersService {
 
   static async signToken(user, login) {
     let expiration = "";
-
     if (user.remember == true) {
       expiration = "6d";
     } else {
@@ -59,7 +58,6 @@ export default class UsersService {
     }
 
     const secret = process.env.SECRET;
-
     const token = jwt.sign(
       {
         id: login.id,
