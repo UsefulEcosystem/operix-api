@@ -334,6 +334,7 @@ export default class KeycloakAdminService {
       body: JSON.stringify({ attributes }),
     });
 
+    console.log(response)
     if (!response.ok) {
       const error = await response.text();
       throw new Error(`Falha ao atualizar atributos do usuário: ${response.status} - ${error}`);

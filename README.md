@@ -223,6 +223,20 @@ Keycloak:
 - o client `operix-admin-client` precisa da service account com roles de `realm-management` como `query-groups`, `manage-groups`, `query-users` e `manage-users`;
 - se o volume do Keycloak já existir, recrie o ambiente para reimportar o realm atualizado: `docker compose -f compose.yaml down -v` e depois `bun run docker:dev`.
 
+- Em desenvolvimento, crie o certificado localmente para acessar o keycloak com https
+``` 
+mkdir certs
+
+openssl req \
+  -x509 \
+  -nodes \
+  -newkey rsa:4096 \
+  -days 365 \
+  -keyout certs/keycloak.key \
+  -out certs/keycloak.crt \
+  -subj "/CN=localhost"
+```
+
 ## SaaS e Produção
 
 Checklist recomendado:

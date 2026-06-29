@@ -3,6 +3,7 @@ node_modules
 dist
 package-lock.json
 bun.lock
+certs
 
 # Gerado dinamicamente por scripts/generate-realm.js — contém credenciais
 config/realm-export.json

@@ -2,10 +2,15 @@ import { spawn } from 'node:child_process';
 
 function runMigrations() {
   return new Promise<void>((resolve, reject) => {
-    const child = spawn('bunx', ['sequelize-cli', 'db:migrate'], {
+    const child = spawn('bun', [
+      'run',
+      './node_modules/.bin/sequelize-cli',
+      'db:migrate'
+    ], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
+      shell: true
     });
 
     child.on('error', reject);
