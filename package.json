@@ -1,5 +1,6 @@
 {
-  "name": "operix",
+  "name": "operix-api",
+  "author": "João Pedro Pereira Lima",
   "version": "1.0.0",
   "description": "Sistema de gestão inteligente para prestadores de serviço",
   "main": "dist/server.js",
@@ -8,8 +9,6 @@
     "bun": ">=1.3.9"
   },
   "scripts": {
-    "database": "docker compose -f compose.yaml up -d --build",
-    "database:down": "docker compose -f compose.yaml down -v",
     "docker:dev": "docker compose -f compose.yaml up -d --build",
     "docker:dev:down": "docker compose -f compose.yaml down -v",
     "docker:prod": "docker compose -f compose.prod.yaml up -d --build",
@@ -21,15 +20,13 @@
     "test": "bun test tests",
     "test:unit": "bun test tests/unit",
     "test:integration": "bun test tests/integration",
-    "clean": "rm -rf dist && echo 'Done.'",
     "lint": "eslint src tests --ext .ts",
     "typecheck": "tsc --noEmit",
+    "check": "bun run typecheck && bun run test && bun run build",
     "build": "bun build ./src/core/server.ts --outdir ./dist --target bun",
-    "start-from-build": "bun run dist/server.js",
-    "check": "bun run typecheck && bun run test && bun run build"
+    "clean-build": "rm -rf dist && echo 'Done.'",
+    "start-from-build": "bun run dist/server.js"
   },
-  "author": "João Pedro Pereira Lima",
-  "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.1",
     "argon2": "^0.30.3",
