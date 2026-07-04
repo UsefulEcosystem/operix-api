@@ -135,10 +135,15 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
     expect(res.json.mock.calls[0][0].data.refresh_token).toBeUndefined();
   });
 
-  test('registrar inicia cadastro mínimo com verificação de e-mail', async () => {
+  test('registrar cria tenant placeholder e retorna sessão do usuário', async () => {
     jest.spyOn(AutenticacaoService, 'registrar').mockResolvedValue({
-      email: 'admin@operix.dev',
-      verification_required: true,
+      token: 'access-token',
+      refreshToken: 'refresh-token',
+      expires_in: 300,
+      refresh_expires_in: 1800,
+      token_type: 'Bearer',
+      user: { id: 5, sub: '5', email: 'admin@operix.dev' },
+      is_new_user: true
     } as any);
 
     const payload = {
@@ -151,8 +156,16 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
 
     await AutenticacaoController.registrar(req, res);
 
-    expect(AutenticacaoService.registrar).toHaveBeenCalledWith(payload);
+    expect(AutenticacaoService.registrar).toHaveBeenCalledWith(payload, expect.any(Object));
     expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      msg: 'Cadastro realizado com sucesso.',
+      data: expect.objectContaining({
+        token: 'access-token',
+        is_new_user: true,
+      }),
+    }));
   });
 
   test('concluirOnboarding delega dados autenticados ao serviço', async () => {
@@ -169,6 +182,25 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
     await AutenticacaoController.concluirOnboarding(req, res);
 
     expect(AutenticacaoService.concluirOnboarding).toHaveBeenCalledWith(user, payload);
-    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.status).toHaveBeenCalledWith(200);
+  });
+
+  test('checkEmail verifica existência do e-mail na API', async () => {
+    jest.spyOn(AutenticacaoService, 'verificarExistenciaEmail').mockResolvedValue({
+      exists: true,
+      active: true,
+    });
+
+    const req = criarRequestMock({ body: { email: 'admin@operix.dev' } });
+    const res = criarResponseMock();
+
+    await AutenticacaoController.checkEmail(req, res);
+
+    expect(AutenticacaoService.verificarExistenciaEmail).toHaveBeenCalledWith('admin@operix.dev');
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      data: { exists: true, active: true },
+    }));
   });
 });

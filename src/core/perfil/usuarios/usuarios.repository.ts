@@ -177,6 +177,21 @@ class UsuariosRepository {
     connect.release();
     return result.rows[0] || null;
   }
+
+  static async atualizarOnboarding(id: number, data: { name?: string; username?: string }) {
+    const connect = await connection.connect();
+    const result = await connect.query(
+      `UPDATE users
+       SET name = COALESCE($2, name),
+           username = COALESCE($3, username),
+           updatedAt = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, data.name || null, data.username || null],
+    );
+    connect.release();
+    return result.rows[0] || null;
+  }
 }
 
 export default UsuariosRepository;

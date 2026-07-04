@@ -6,7 +6,7 @@ import { sanitizedUserSchema } from '../perfil/usuarios/usuarios.schema.js';
 extendZodWithOpenApi(z);
 
 const authLoginSchema = z.object({
-  username: z.string().min(1, 'Campo "Nome de Usuário" é obrigatório.'),
+  email: z.string().email('Campo "E-mail" inválido.'),
   password: z.string().min(1, 'Campo "Senha" é obrigatório.'),
   remember: z.boolean().optional(),
 }).openapi('AuthLogin');
@@ -28,8 +28,17 @@ const authCallbackSchema = z.object({
   code_verifier: z.string().min(16, 'Campo "code_verifier" é obrigatório.'),
 }).openapi('AuthCallback');
 
+const authCheckEmailSchema = z.object({
+  email: z.string().email('Campo "E-mail" inválido.'),
+}).openapi('AuthCheckEmail');
+
 const authRegisterSchema = z.object({
   email: z.string().email('Campo "E-mail" inválido.'),
+  password: z.string().min(8, 'Campo "Senha" deve ter no mínimo 8 caracteres.'),
+  confirm_password: z.string().min(8, 'Campo "Confirmar senha" deve ter no mínimo 8 caracteres.'),
+}).refine((data) => data.password === data.confirm_password, {
+  message: 'As senhas informadas não conferem.',
+  path: ['confirm_password'],
 }).openapi('AuthRegister');
 
 const authSetupPasswordSchema = z.object({
@@ -61,13 +70,10 @@ const authResetPasswordSchema = z.object({
 const onboardingSchema = z.object({
   company_name: z.string().min(1).optional(),
   tenant: z.string().min(1).optional(),
-  name: z.string().min(1, 'Campo "Nome" é obrigatório.'),
-  username: z.string().min(1, 'Campo "Nome de Usuário" é obrigatório.'),
+  name: z.string().min(1).optional(),
+  username: z.string().min(1).optional(),
   cnpj: z.string().max(20).optional().nullable(),
   description: z.string().max(1000).optional().nullable(),
-}).refine((data) => data.company_name || data.tenant, {
-  message: 'Campo "Nome da empresa" é obrigatório.',
-  path: ['company_name'],
 }).openapi('Onboarding');
 
 const publicAuthConfigDataSchema = z.object({
@@ -91,6 +97,14 @@ const authSessionDataSchema = z.object({
   user: sanitizedUserSchema.nullable().optional(),
 }).openapi('AuthSessionData');
 
+const authCheckEmailResponseSchema = buildApiResponseSchema(
+  z.object({
+    exists: z.boolean(),
+    active: z.boolean(),
+  }),
+  'AuthCheckEmailResponse',
+);
+
 const authAuthorizeResponseSchema = buildApiResponseSchema(
   z.object({
     authorization_url: z.string().url(),
@@ -108,11 +122,7 @@ const authMeResponseSchema = buildApiResponseSchema(z.object({
   access: z.any().optional(),
 }), 'AuthMeResponse');
 const authOnboardingResponseSchema = buildApiResponseSchema(sanitizedUserSchema.nullable(), 'AuthOnboardingResponse');
-const authRegisterResponseSchema = buildApiResponseSchema(z.object({
-  email: z.string().email(),
-  setup_required: z.boolean(),
-  setup_url: z.string().url().optional(),
-}), 'AuthRegisterResponse');
+const authRegisterResponseSchema = buildApiResponseSchema(authSessionDataSchema, 'AuthRegisterResponse');
 const authGenericResponseSchema = buildApiResponseSchema(z.object({
   accepted: z.boolean(),
   reset_url: z.string().url().optional(),
@@ -123,6 +133,8 @@ export {
   authLoginSchema,
   authCallbackResponseSchema,
   authRefreshSchema,
+  authCheckEmailSchema,
+  authCheckEmailResponseSchema,
   authRegisterSchema,
   authRegisterResponseSchema,
   authSetupPasswordSchema,

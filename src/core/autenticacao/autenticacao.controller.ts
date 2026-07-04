@@ -56,6 +56,7 @@ function sessionResponse(session: any) {
     refresh_expires_in: session.refresh_expires_in,
     token_type: session.token_type,
     user: session.user,
+    is_new_user: session.is_new_user ?? false,
   };
 }
 
@@ -66,6 +67,15 @@ export default class AutenticacaoController {
       return ManipuladorResposta.sucesso(res, data, 'Configuração de autenticação carregada.');
     } catch (error: any) {
       return ManipuladorResposta.erro(res, error.message || 'Erro ao carregar configuração.', 500);
+    }
+  }
+
+  static async checkEmail(req: Request, res: Response) {
+    try {
+      const data = await AutenticacaoService.verificarExistenciaEmail(req.body.email);
+      return ManipuladorResposta.sucesso(res, data, 'Verificação de e-mail realizada.');
+    } catch (error: any) {
+      return ManipuladorResposta.erro(res, error.message || 'Erro ao verificar e-mail.', error.status || 400);
     }
   }
 
@@ -102,8 +112,8 @@ export default class AutenticacaoController {
 
   static async login(req: Request, res: Response) {
     try {
-      const { username, password } = req.body;
-      const session = await AutenticacaoService.login(username, password, getSessionContext(req));
+      const { email, password } = req.body;
+      const session = await AutenticacaoService.login(email, password, getSessionContext(req));
       setRefreshCookie(res, session.refreshToken);
       return ManipuladorResposta.sucesso(res, sessionResponse(session), 'Login realizado com sucesso.');
     } catch (error: any) {
@@ -113,20 +123,11 @@ export default class AutenticacaoController {
 
   static async registrar(req: Request, res: Response) {
     try {
-      const data = await AutenticacaoService.registrar(req.body);
-      return ManipuladorResposta.sucesso(res, data, 'Cadastro iniciado. Verifique seu e-mail para continuar.', 201);
+      const session = await AutenticacaoService.registrar(req.body, getSessionContext(req));
+      setRefreshCookie(res, session.refreshToken);
+      return ManipuladorResposta.sucesso(res, sessionResponse(session), 'Cadastro realizado com sucesso.', 201);
     } catch (error: any) {
       return ManipuladorResposta.erro(res, error.message || 'Erro ao registrar usuário.', error.status || 400);
-    }
-  }
-
-  static async verificarEmail(req: Request, res: Response) {
-    try {
-      const session = await AutenticacaoService.verificarEmail(req.body.token, getSessionContext(req));
-      setRefreshCookie(res, session.refreshToken);
-      return ManipuladorResposta.sucesso(res, sessionResponse(session), 'E-mail verificado com sucesso.');
-    } catch (error: any) {
-      return ManipuladorResposta.erro(res, error.message || 'Erro ao verificar e-mail.', error.status || 401);
     }
   }
 
@@ -186,7 +187,7 @@ export default class AutenticacaoController {
   static async concluirOnboarding(req: Request, res: Response) {
     try {
       const data = await AutenticacaoService.concluirOnboarding((req as any).user, req.body);
-      return ManipuladorResposta.sucesso(res, data, 'Onboarding concluído com sucesso.', 201);
+      return ManipuladorResposta.sucesso(res, data, 'Onboarding concluído com sucesso.');
     } catch (error: any) {
       return ManipuladorResposta.erro(res, error.message || 'Erro ao concluir onboarding.', error.status || 400);
     }

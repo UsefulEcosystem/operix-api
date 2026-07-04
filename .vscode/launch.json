@@ -7,7 +7,7 @@
             "name": "Debug API (Bun)",
             "runtimeExecutable": "bun",
             "runtimeArgs": [
-                "--inspect-wait",
+                "--inspect-brk",
                 "run",
                 "src/core/server.ts"
             ],

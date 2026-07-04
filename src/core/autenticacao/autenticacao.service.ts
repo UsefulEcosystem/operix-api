@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
 import ErroValidacao from '../utils/erro-validacao.js';
 import LocatarioModel from '../perfil/locatarios/locatarios.model.js';
-import LocatarioRepository from '../perfil/locatarios/locatarios.repository.js';
+import LocatariosRepository from '../perfil/locatarios/locatarios.repository.js';
 import UsuariosRepository from '../perfil/usuarios/usuarios.repository.js';
 import UsuarioModel from '../perfil/usuarios/usuarios.model.js';
 import { sanitizarUsuario } from '../utils/sanitizar.js';
@@ -168,6 +168,7 @@ export default class AutenticacaoService {
     });
 
     const tokenData: any = await response.json().catch(() => ({}));
+
     if (!response.ok || !tokenData.id_token) {
       throw new ErroValidacao(tokenData.error_description || 'Falha ao autenticar com Google.', 401);
     }
@@ -177,64 +178,105 @@ export default class AutenticacaoService {
       throw new ErroValidacao('Conta Google sem e-mail verificado.', 401);
     }
 
-    const user = await UsuariosRepository.findByEmail(googleUser.email);
-    if (!user || user.active === false || !user.password || !user.email_verified_at) {
-      throw new ErroValidacao('Usuário Google não cadastrado ou inativo.', 401);
+    let user = await UsuariosRepository.findByEmail(googleUser.email);
+
+    if (!user || !user.active) {
+      // Novo usuário Google: criar tenant placeholder + usuário com permissões full
+      user = await PoliticaLocatarioService.comBloqueioProvisionamentoLocatario(async () => {
+        await PoliticaLocatarioService.assertLocatarioCanBeCreated();
+
+        const displayName = googleUser.name || googleUser.email!.split('@')[0];
+        const tenant = await LocatariosRepository.criar(new LocatarioModel({
+          name: displayName,
+        }));
+
+        return UsuariosRepository.criar(new UsuarioModel({
+          tenant_id: tenant.id,
+          name: displayName,
+          username: `user_${crypto.randomUUID().slice(0, 8)}`,
+          email: googleUser.email!,
+          root: true,
+          admin: true,
+          active: true,
+          preferences: {},
+          password: null,
+        }));
+      });
     }
 
-    return this.criarSessao(user, context);
+    const session = await this.criarSessao(user, context);
+    // Indicar se é um usuário recém-criado para o frontend redirecionar ao onboarding
+    return { ...session, is_new_user: !user.email_verified_at };
   }
 
-  static async login(username: string, password: string, context: SessionContext = {}) {
-    const user = await UsuariosRepository.findByLogin(username);
+  static async verificarExistenciaEmail(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await UsuariosRepository.findByEmail(normalizedEmail);
+    return {
+      exists: Boolean(user),
+      active: user ? Boolean(user.active) : false,
+    };
+  }
+
+  static async login(email: string, password: string, context: SessionContext = {}) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await UsuariosRepository.findByEmail(normalizedEmail);
+
     if (!user || user.active === false || !user.password) {
-      throw new ErroValidacao('Usuário ou senha inválidos.', 401);
+      throw new ErroValidacao('E-mail ou senha inválidos.', 401);
     }
 
     const validPassword = await argon2.verify(user.password, password);
     if (!validPassword) {
-      throw new ErroValidacao('Usuário ou senha inválidos.', 401);
-    }
-
-    if (!user.email_verified_at) {
-      throw new ErroValidacao('E-mail ainda não verificado. Verifique sua caixa de entrada para continuar.', 403);
+      throw new ErroValidacao('E-mail ou senha inválidos.', 401);
     }
 
     return this.criarSessao(user, context);
   }
 
-  static async registrar(data: { email: string }) {
+  static async registrar(
+    data: { email: string; password: string; confirm_password: string },
+    context: SessionContext = {},
+  ) {
     const email = data.email.trim().toLowerCase();
-    const existingUser = await UsuariosRepository.findByEmail(email);
-    if (existingUser) {
-      throw new ErroValidacao('E-mail já cadastrado.', 409);
-    }
 
-    const user = await UsuariosRepository.criar(new UsuarioModel({
-      tenant_id: null,
-      name: email.split('@')[0],
-      username: `pending_${crypto.randomUUID().slice(0, 8)}`,
-      email,
-      root: true,
-      admin: true,
-      active: false,
-      preferences: {},
-      password: null,
-    }));
+    return PoliticaLocatarioService.comBloqueioProvisionamentoLocatario(async () => {
+      await PoliticaLocatarioService.assertLocatarioCanBeCreated();
 
-    const setup = await this.criarTokenAcao(user.id, 'password_setup', 24);
-    const setupUrl = buildFrontendUrl('/definir-senha', setup.token);
-    await EmailDeliveryService.enviarEmailAutenticacao({
-      to: email,
-      purpose: 'password_setup',
-      url: setupUrl,
+      const existing = await UsuariosRepository.findByEmail(email);
+      if (existing && existing.active) {
+        throw new ErroValidacao('E-mail já cadastrado.', 409);
+      }
+
+      // Tenant placeholder com nome derivado do e-mail
+      const placeholderName = email.split('@')[0];
+      const tenant = await LocatariosRepository.criar(new LocatarioModel({
+        name: placeholderName,
+      }));
+
+      let createdUser: any;
+      try {
+        const passwordHash = await argon2.hash(data.password);
+        createdUser = await UsuariosRepository.criar(new UsuarioModel({
+          tenant_id: tenant.id,
+          name: placeholderName,
+          username: `user_${crypto.randomUUID().slice(0, 8)}`,
+          email,
+          root: true,
+          admin: true,
+          active: true,
+          preferences: {},
+          password: passwordHash,
+        }));
+      } catch (error) {
+        // Rollback do tenant em caso de falha ao criar usuário
+        await LocatariosRepository.remover(tenant.id);
+        throw error;
+      }
+
+      const session = await this.criarSessao(createdUser, context);
+      return { ...session, is_new_user: true };
     });
-
-    return {
-      email,
-      setup_required: true,
-      ...buildAuthActionResponse('setup_url', setupUrl),
-    };
   }
 
   static async definirSenha(data: { token: string; password: string; confirm_password: string }, context: SessionContext = {}) {
@@ -340,117 +382,45 @@ export default class AutenticacaoService {
     }
   }
 
-  static async cadastrar(data: {
-    company_name?: string;
-    tenant?: string;
-    name: string;
-    username: string;
-    email: string;
-    password: string;
-    cnpj?: string | null;
-    description?: string | null;
-  }) {
-    const tenantName = (data.company_name || data.tenant || '').trim();
-    if (!tenantName) {
-      throw new ErroValidacao('Nome da empresa é obrigatório.', 400);
-    }
-
-    return PoliticaLocatarioService.comBloqueioProvisionamentoLocatario(async () => {
-      await PoliticaLocatarioService.assertLocatarioCanBeCreated();
-
-      const existingTenant = await LocatarioRepository.findByName(tenantName);
-      if (existingTenant) {
-        throw new ErroValidacao('Unidade já cadastrada.', 409);
-      }
-
-      if (await UsuariosRepository.findByLogin(data.email)) {
-        throw new ErroValidacao('E-mail já cadastrado.', 409);
-      }
-
-      if (await UsuariosRepository.findByLogin(data.username)) {
-        throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
-      }
-
-      let tenant: any = null;
-      try {
-        tenant = await LocatarioRepository.criar(LocatarioModel.deRequisicao({
-          name: tenantName,
-          cnpj: data.cnpj?.trim(),
-          description: data.description?.trim(),
-        }));
-
-        const passwordHash = await argon2.hash(data.password);
-        const localUser = await UsuariosRepository.criar(new UsuarioModel({
-          tenant_id: tenant.id,
-          name: data.name,
-          username: data.username,
-          email: data.email,
-          root: true,
-          admin: true,
-          active: true,
-          preferences: {},
-          password: passwordHash,
-        }));
-
-        return sanitizarUsuario(localUser);
-      } catch (error) {
-        if (tenant?.id) {
-          await LocatarioRepository.remover(tenant.id);
-        }
-        throw error;
-      }
-    });
-  }
-
   static async concluirOnboarding(authenticatedUser: any, data: any) {
-    if (authenticatedUser?.tenant_id) {
-      return sanitizarUsuario(authenticatedUser);
-    }
-
     if (!authenticatedUser?.id) {
       throw new ErroValidacao('Usuário autenticado não identificado.', 401);
     }
 
-    const tenantName = (data.company_name || data.tenant || '').trim();
-    if (!tenantName) {
-      throw new ErroValidacao('Nome da empresa é obrigatório.', 400);
+    const tenantId = authenticatedUser.tenant_id;
+    if (!tenantId) {
+      throw new ErroValidacao('Nenhum tenant vinculado a este usuário.', 400);
     }
 
-    return PoliticaLocatarioService.comBloqueioProvisionamentoLocatario(async () => {
-      await PoliticaLocatarioService.assertLocatarioCanBeCreated();
+    // Atualiza tenant somente com os campos fornecidos
+    const tenantName = (data.company_name || data.tenant || '').trim();
+    if (tenantName || data.cnpj !== undefined || data.description !== undefined) {
+      await LocatariosRepository.atualizar(tenantId, {
+        name: tenantName || undefined,
+        cnpj: data.cnpj ?? undefined,
+        description: data.description ?? undefined,
+      });
+    }
 
-      const existingTenant = await LocatarioRepository.findByName(tenantName);
-      if (existingTenant) {
-        throw new ErroValidacao('Unidade já cadastrada.', 409);
-      }
-
-      const existingUsername = await UsuariosRepository.findByUsername(data.username);
-      if (existingUsername && existingUsername.id !== authenticatedUser.id) {
-        throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
-      }
-
-      let tenant: any = null;
-      try {
-        tenant = await LocatarioRepository.criar(LocatarioModel.deRequisicao({
-          name: tenantName,
-          cnpj: data.cnpj?.trim(),
-          description: data.description?.trim(),
-        }));
-
-        const user = await UsuariosRepository.completarOnboarding(authenticatedUser.id, {
-          tenant_id: tenant.id,
-          name: data.name,
-          username: data.username,
-        });
-
-        return sanitizarUsuario(user);
-      } catch (error) {
-        if (tenant?.id) {
-          await LocatarioRepository.remover(tenant.id);
+    // Atualiza usuário somente com os campos fornecidos
+    let updatedUser: any;
+    if (data.name || data.username) {
+      if (data.username) {
+        const existingUsername = await UsuariosRepository.findByUsername(data.username);
+        if (existingUsername && existingUsername.id !== authenticatedUser.id) {
+          throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
         }
-        throw error;
       }
-    });
+
+      updatedUser = await UsuariosRepository.atualizarOnboarding(authenticatedUser.id, {
+        name: data.name || undefined,
+        username: data.username || undefined,
+      });
+    } else {
+      updatedUser = await UsuariosRepository.findById(authenticatedUser.id);
+    }
+
+    return sanitizarUsuario(updatedUser);
   }
 
   static async verificarAccessToken(token: string) {
@@ -475,7 +445,6 @@ export default class AutenticacaoService {
       sub: String(user.id),
       roles,
       tenant_id: user.tenant_id,
-      onboarding_required: !user.tenant_id,
     };
   }
 

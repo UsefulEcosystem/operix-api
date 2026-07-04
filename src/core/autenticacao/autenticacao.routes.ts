@@ -12,13 +12,22 @@ import {
   authRegisterSchema,
   authResetPasswordSchema,
   authRefreshSchema,
-  authVerifyEmailSchema,
+  authCheckEmailSchema,
   onboardingSchema,
 } from './autenticacao.schema.js';
 
 const router = Router();
 
 router.get('/configuracao', AutenticacaoController.config);
+
+router.post(
+  '/verificar-email-existencia',
+  RateLimitMiddleware.authPadrao,
+  SegurancaMiddleware.exigirOrigemConfiavel,
+  ValidacaoMiddleware.validarSchema(authCheckEmailSchema),
+  AutenticacaoController.checkEmail,
+);
+
 router.post(
   '/autorizar',
   RateLimitMiddleware.authPadrao,
@@ -26,6 +35,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authAuthorizeSchema),
   AutenticacaoController.authorize,
 );
+
 router.post(
   '/retorno',
   RateLimitMiddleware.authEstrito,
@@ -33,6 +43,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authCallbackSchema),
   AutenticacaoController.callback,
 );
+
 router.post(
   '/login',
   RateLimitMiddleware.authEstrito,
@@ -40,6 +51,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authLoginSchema),
   AutenticacaoController.login,
 );
+
 router.post(
   '/registrar',
   RateLimitMiddleware.cadastroPublico,
@@ -47,13 +59,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authRegisterSchema),
   AutenticacaoController.registrar,
 );
-router.post(
-  '/verificar-email',
-  RateLimitMiddleware.authPadrao,
-  SegurancaMiddleware.exigirOrigemConfiavel,
-  ValidacaoMiddleware.validarSchema(authVerifyEmailSchema),
-  AutenticacaoController.verificarEmail,
-);
+
 router.post(
   '/recuperar-senha',
   RateLimitMiddleware.authEstrito,
@@ -61,6 +67,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authForgotPasswordSchema),
   AutenticacaoController.solicitarRecuperacaoSenha,
 );
+
 router.post(
   '/redefinir-senha',
   RateLimitMiddleware.authEstrito,
@@ -68,6 +75,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authResetPasswordSchema),
   AutenticacaoController.redefinirSenha,
 );
+
 router.post(
   '/renovar',
   RateLimitMiddleware.authPadrao,
@@ -75,6 +83,7 @@ router.post(
   ValidacaoMiddleware.validarSchema(authRefreshSchema),
   AutenticacaoController.renovarToken,
 );
+
 router.post(
   '/sair',
   RateLimitMiddleware.authPadrao,
@@ -82,10 +91,12 @@ router.post(
   ValidacaoMiddleware.validarSchema(authRefreshSchema),
   AutenticacaoController.logout,
 );
+
 router.get('/eu', AutenticacaoMiddleware.autenticarToken, AutenticacaoController.me);
+
 router.post(
   '/onboarding',
-  RateLimitMiddleware.cadastroPublico,
+  RateLimitMiddleware.authPadrao,
   SegurancaMiddleware.exigirOrigemConfiavel,
   AutenticacaoMiddleware.autenticarToken,
   ValidacaoMiddleware.validarSchema(onboardingSchema),

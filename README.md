@@ -2,24 +2,124 @@
 
 API REST do Operix Service para autenticação, multi-tenancy, RBAC, módulos, planos, trial, gestão operacional, estoque, notificações e configurações organizacionais.
 
-## Visão Geral
+---
 
-O backend é o ponto central de segurança e regra de negócio. Ele emite e valida JWT próprio, mantém refresh tokens opacos em cookie HttpOnly, resolve o tenant do usuário, aplica permissões granulares e protege todas as rotas privadas independentemente do frontend.
+## 🚀 Como Iniciar (Setup Rápido)
 
-Responsabilidades principais:
+### Pré-requisitos
+- **Bun** (`>=1.3.9`)
+- **Docker** e **Docker Compose**
 
-- autenticação local com usuário/senha;
-- autenticação social Google via OAuth/OIDC direto;
-- access token JWT curto e refresh token opaco com rotação obrigatória;
-- logout com revogação de refresh token e blacklist de access token até expirar;
-- criação e isolamento de tenants;
-- RBAC com roles locais e overrides granulares por usuário;
-- políticas de modo `LOCAL` e `SAAS`;
-- plano/trial/feature flags;
-- rotas operacionais, estoque, notificações, logs e perfil;
-- documentação OpenAPI em `/docs`.
+### Passo a Passo
+```bash
+# 1. Clone o repositório e acesse a pasta
+cd operix-service-api
 
-## Arquitetura
+# 2. Configure as variáveis de ambiente
+cp .env.example .env
+
+# 3. Instale as dependências
+bun install
+
+# 4. Suba o banco de dados PostgreSQL
+bun run docker:dev
+
+# 5. Execute as migrations do banco
+bun run migrate
+
+# 6. Inicie o servidor de desenvolvimento
+bun run dev
+```
+
+- **API:** `http://localhost:3333`
+- **Saúde:** `http://localhost:3333/saude`
+- **Documentação OpenAPI:** `http://localhost:3333/docs`
+
+---
+
+## 🔐 Fluxo de Autenticação e Onboarding
+
+O fluxo de autenticação foi reestruturado para ser previsível, seguro e com criação imediata de Tenants:
+
+```
+       [ Acesso do Usuário ]
+                 │
+        { Forma de Acesso? }
+         /                \
+ [ Continuar c/ Google ]  [ Continuar c/ E-mail ]
+        │                           │
+  (Valida Token)              (Verifica existência)
+        │                           │
+  { Novo Usuário? }           { Novo Usuário? }
+   /             \             /             \
+ (Sim)          (Não)        (Sim)          (Não)
+   │              │            │              │
+(Cria Tenant   (Cria       (Cria Tenant   (Login Direto)
+ Placeholder   Sessão)     Placeholder     
+ e Usuário)       │        e Usuário)
+   │              │            │
+   └──────┬───────┘            │
+          │                    │
+(Retorna Sessão)         (Retorna Sessão)
+          │                    │
+(Frontend: vai           (Frontend: vai
+ para /onboarding)        para /onboarding)
+```
+
+- **Criação do Tenant:** O tenant é provisionado imediatamente com dados temporários (derivados do e-mail). O usuário já possui contexto de tenant desde o primeiro momento.
+- **Onboarding Simplificado:** O onboarding tornou-se uma etapa visual de `UPDATE` com campos opcionais. Se o usuário pular, a conta continua funcional com os dados padrões.
+- **Detecção de Novo Usuário:** A API retorna `is_new_user: true` no retorno do Google ou Registro por e-mail para que o frontend direcione ao onboarding.
+
+---
+
+## 🛠️ Scripts e Testes
+
+### Scripts Disponíveis
+- `bun run dev` - API com auto-reload (watch mode)
+- `bun run start` - Inicia a API normalmente
+- `bun run build` - Gera a build do projeto em `dist/`
+- `bun run typecheck` - Validação de tipos do TypeScript
+- `bun run lint` - Análise estática do código (ESLint)
+- `bun run migrate` - Roda migrations pendentes
+- `bun run seed` - Popula o banco com sementes de teste
+
+### Executando os Testes
+Os testes utilizam o **Bun Test** para máxima velocidade.
+```bash
+# Executar todos os testes
+bun run test
+
+# Executar apenas testes de integração
+bun run test:integration
+
+# Executar apenas testes unitários
+bun run test:unit
+```
+
+---
+
+## 🐞 Guia de Depuração no VS Code
+
+Preparamos configurações específicas para depuração rápida no VS Code em ambos os projetos.
+
+### A) Depurando a API (`operix-service-api`)
+Abra a aba **Run and Debug (Ctrl+Shift+D)** e selecione:
+1. **Debug API (Bun):** Inicializa a API localmente com o Bun no modo de inspeção (`--inspect-brk`), pausando na primeira linha do código.
+2. **Attach API (Bun :6499):** Conecta o depurador do VS Code a um processo Bun já em execução (docker, terminal externo, etc) que exponha a porta `6499`.
+
+### B) Depurando o Frontend (`operix-service-app`)
+1. Inicie o servidor de desenvolvimento no terminal do frontend (`npm run dev`).
+2. No VS Code do frontend, selecione a configuração **Debug App (Chrome)** e clique no Play. Isso permite que você coloque breakpoints diretamente no seu código `.vue` e `.js` no VS Code.
+
+> [!TIP]
+> **Dicas de Produtividade:**
+> - Coloque breakpoints clicando na margem esquerda da linha no VS Code.
+> - Passe o mouse sobre qualquer variável com o código pausado para ver o seu valor.
+> - Use a aba **Debug Console** para avaliar expressões JS em tempo real.
+
+---
+
+## 📂 Estrutura do Projeto
 
 ```text
 src/
@@ -47,140 +147,37 @@ tests/
   integration/             Rotas HTTP principais
 ```
 
-## Autenticação
+---
 
-Fluxos disponíveis:
+## ⚙️ Variáveis de Ambiente (.env)
 
-- `POST /api/autenticacao/onboarding`: cria o primeiro tenant e o usuário proprietário.
-- `POST /api/autenticacao/login`: autentica por e-mail/usuário e senha.
-- `POST /api/autenticacao/autorizar`: gera URL Google OAuth com PKCE.
-- `POST /api/autenticacao/retorno`: troca o `code` Google por sessão local.
-- `POST /api/autenticacao/renovar`: rotaciona refresh token e emite novo access token.
-- `POST /api/autenticacao/sair`: revoga refresh token e coloca o access token em blacklist.
-- `GET /api/autenticacao/eu`: retorna usuário, permissões efetivas e snapshot de acesso.
+| Variável | Descrição | Exemplo Padrão |
+|----------|-----------|----------------|
+| `DEPLOYMENT_MODE` | Modo da API (`LOCAL` ou `SAAS`) | `LOCAL` |
+| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql://admin:admin@localhost:5432/operix-service` |
+| `FRONTEND_URL` | URL de origem do painel frontend | `http://localhost:5173` |
+| `JWT_SECRET` | Segredo de assinatura de Tokens | `change-this-secret-in-production` |
+| `ACCESS_TOKEN_TTL_SECONDS` | Tempo de expiração do Token de Acesso | `900` (15 min) |
+| `REFRESH_TOKEN_TTL_DAYS` | Tempo de expiração do Token de Renovação | `30` |
+| `GOOGLE_CLIENT_ID` | Client ID do Google OAuth | (Opcional se local) |
+| `GOOGLE_CLIENT_SECRET` | Client Secret do Google OAuth | (Opcional se local) |
 
-Contrato de sessão:
+---
 
-- o access token é retornado no JSON como `token`;
-- o refresh token não é retornado no JSON;
-- o refresh token é enviado em cookie `HttpOnly`, `SameSite=Lax`, `Secure` em produção;
-- clientes web devem manter o access token em memória e chamar refresh com credenciais/cookies habilitados.
+## 🛡️ Segurança e Regras do Backend
 
-## Modos de Implantação
+- **Sessão por Cookie:** O refresh token é enviado exclusivamente por cookie `HttpOnly`, `SameSite=Lax` e `Secure` (em prod), protegendo a renovação de tokens contra ataques XSS.
+- **Revogação & Blacklist:** O logout invalida ativamente o refresh token no banco de dados e adiciona o token JWT de acesso em uma lista negra temporária.
+- **Isolamento de Tenants:** O banco de dados e as consultas filtram rigorosamente por `tenant_id` nas rotas autenticadas.
+- **Modo LOCAL vs SAAS:**
+  - `LOCAL`: Permite apenas um tenant. Se já configurado, novas criações de empresas são bloqueadas por locks de advisory. Todos os módulos e recursos ficam totalmente liberados.
+  - `SAAS`: Permite múltiplos tenants. O acesso a recursos depende do plano contratado e regras de assinatura/trial (30 dias padrão).
 
-`DEPLOYMENT_MODE=LOCAL`
+---
 
-- permite apenas um tenant;
-- após o primeiro tenant, onboarding/cadastro de empresa fica bloqueado;
-- proprietário/root tem acesso completo;
-- planos, cobrança e assinatura não bloqueiam recursos;
-- todos os módulos ficam habilitados.
+## 🔍 Troubleshooting (Solução de Problemas)
 
-Google OAuth:
-
-- o `redirect_uri` cadastrado no Google Cloud precisa ser um callback HTML real, sem fragmento `#`;
-- ambiente local: `http://localhost:3000/oauth/callback.html`;
-- produção: `https://seu-dominio/oauth/callback.html`;
-- o callback HTML redireciona para `#/auth/callback` dentro do SPA.
-
-`DEPLOYMENT_MODE=SAAS`
-
-- permite múltiplos tenants;
-- permissões dependem de plano, trial, roles locais e overrides;
-- trial gratuito dura 30 dias;
-- trial ativo libera acesso completo;
-- trial vencido cai para o plano configurado, atualmente `free` por padrão.
-
-## Ambiente Local
-
-Pré-requisitos:
-
-- Bun `>=1.3.9`;
-- Docker;
-- Docker Compose.
-
-Setup:
-
-```bash
-cp .env.example .env
-bun install
-bun run docker:dev
-bun run migrate
-bun run dev
-```
-
-URLs:
-
-- API: `http://localhost:3333`;
-- health: `http://localhost:3333/saude`;
-- docs: `http://localhost:3333/docs`.
-
-Variáveis principais:
-
-```env
-APP_NAME=Operix Service
-PORT=3333
-NODE_ENV=development
-ORIGIN=http://localhost:3000,http://localhost:5173
-DEPLOYMENT_MODE=LOCAL
-FRONTEND_URL=http://localhost:5173
-DATABASE_URL=postgresql://admin:admin@localhost:5432/operix-service
-JWT_SECRET=change-this-secret-in-production
-JWT_ISSUER=operix-service-api
-JWT_AUDIENCE=operix-service-app
-ACCESS_TOKEN_TTL_SECONDS=900
-REFRESH_TOKEN_TTL_DAYS=30
-REFRESH_COOKIE_NAME=operix_refresh_token
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-```
-
-## Scripts
-
-- `bun run dev`: API com watch;
-- `bun run start`: API normal;
-- `bun run build`: bundle em `dist/`;
-- `bun run typecheck`: TypeScript;
-- `bun run lint`: ESLint;
-- `bun run test`: todos os testes;
-- `bun run test:unit`: unitários;
-- `bun run test:integration`: integração;
-- `bun run migrate`: migrations;
-- `bun run seed`: seeds;
-- `bun run docker:dev`: compose local;
-- `bun run docker:prod`: compose produção.
-
-## Testes
-
-Comandos recomendados:
-
-```bash
-bun run typecheck
-bun run test
-bun run build
-```
-
-Alguns testes de integração usam `supertest` com porta dinâmica e podem falhar em sandboxes que bloqueiam `listen(0)`.
-
-## Segurança
-
-- JWT local validado por issuer, audience, assinatura HS256 e `jti`;
-- refresh token opaco persistido somente como hash;
-- rotação obrigatória de refresh token;
-- logout revoga refresh token e invalida access token até sua expiração;
-- rotas privadas passam por auth global;
-- permissões são validadas no backend;
-- isolamento por `tenant_id`;
-- respostas de usuário passam por sanitização;
-- criação de tenant em `LOCAL` usa advisory lock.
-
-## Troubleshooting
-
-- `Token expirado`: chame `/api/autenticacao/renovar` com cookies habilitados.
-- `Refresh token inválido ou expirado`: faça login novamente.
-- `onboarding bloqueado`: em `LOCAL`, já existe tenant.
-- `sem permissão`: confira `/api/permissoes/eu`, roles locais e overrides.
-- `Google não abre`: confira `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e redirect URI no Google Cloud.
-- `Erro 400 invalid_request no Google`: confirme que o `redirect_uri` cadastrado é exatamente `http://localhost:3000/oauth/callback.html` em local ou `https://seu-dominio/oauth/callback.html` em produção; não use `#/auth/callback`.
-- `CORS`: ajuste `ORIGIN` e envie cookies pelo frontend.
-- `migration falha`: confira ordem das migrations e banco definido em `DATABASE_URL`.
+- **Erro `onboarding bloqueado`:** Se a API está configurada em modo `LOCAL`, ela bloqueia a criação de novos tenants caso já exista um registrado. Delete ou reinicie o banco se deseja refazer o onboarding.
+- **Token Expirado:** Chame o endpoint `/api/autenticacao/renovar` enviando cookies para rotacionar seu token.
+- **CORS:** Certifique-se de que a variável `ORIGIN` no `.env` contém exatamente o domínio e porta do seu frontend.
+- **Erro 400 invalid_request no Google:** Garanta que a URL de redirecionamento no console do desenvolvedor Google é exatamente `http://localhost:3000/oauth/callback.html` (para local) ou `https://seu-dominio/oauth/callback.html` (para produção).
