@@ -16,7 +16,7 @@ io.use(async (socket, next) => {
     const user = await AutenticacaoMiddleware.verificarTokenBruto(cleanToken as string);
     (socket as any).user = user;
     next();
-  } catch (error) {
+  } catch {
     return next(new Error('Token de Mensageria Inválido'));
   }
 });

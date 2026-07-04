@@ -2,8 +2,9 @@ import ErroValidacao from '../../utils/erro-validacao.js';
 import type UsuarioModel from './usuarios.model.js';
 import UsuariosRepository from './usuarios.repository.js';
 import LocatariosRepository from '../locatarios/locatarios.repository.js';
-import KeycloakAdminService from '../../autenticacao/keycloak-admin.service.js';
-import { getRoleKeyForModule } from '../permissoes/permissoes.catalog.js';
+import argon2 from 'argon2';
+import { obterCatalogooPermissao } from '../permissoes/permissoes.catalog.js';
+import PermissoesRepository from '../permissoes/permissoes.repository.js';
 import { sanitizarUsuario } from '../../utils/sanitizar.js';
 
 export default class UsuariosService {
@@ -25,59 +26,33 @@ export default class UsuariosService {
       throw new ErroValidacao('Unidade do usuário autenticado não encontrada.', 404);
     }
 
-    const safeName = user.name.trim();
-    const names = safeName.split(/\s+/).filter(Boolean);
-    const firstName = names[0] || user.username;
-    const lastName = names.slice(1).join(' ') || firstName;
-    const adminToken = await KeycloakAdminService.getAdminToken();
-    const { groupId } = tenant.keycloak_group_id
-      ? { groupId: tenant.keycloak_group_id }
-      : await KeycloakAdminService.ensureGroupExists(tenant.name, adminToken);
-    const roleKeys = this.resolveRoleKeys(Boolean(user.admin), moduleKeys);
-
-    let keycloakId: string | null = null;
-
-    try {
-      keycloakId = await KeycloakAdminService.createUser({
-        username: user.username,
-        email: user.email,
-        firstName,
-        lastName,
-        password: user.password || '',
-        attributes: {
-          admin: [String(Boolean(user.admin))],
-          root: [String(Boolean(user.root))],
-          tenant: [tenant.name],
-          tenant_id: [String(tenant.id)],
-        },
-      }, adminToken);
-
-      await KeycloakAdminService.addUserToGroup(keycloakId, groupId, adminToken);
-      await KeycloakAdminService.assignRealmRoles(keycloakId, roleKeys, adminToken);
-
-      const persistedUser = await UsuariosRepository.criar({
-        ...user,
-        tenant: tenant.name,
-        tenant_id: tenant.id,
-        keycloak_id: keycloakId,
-        password: null,
-      } as UsuarioModel);
-
-      await KeycloakAdminService.updateUserAttributes(keycloakId, {
-        admin: [String(Boolean(persistedUser.admin))],
-        root: [String(Boolean(persistedUser.root))],
-        tenant: [tenant.name],
-        tenant_id: [String(tenant.id)],
-      }, adminToken);
-
-      return sanitizarUsuario(persistedUser);
-    } catch (error) {
-      if (keycloakId) {
-        await KeycloakAdminService.deleteUser(keycloakId, adminToken);
-      }
-
-      throw error;
+    const existingLogin = await UsuariosRepository.findByLogin(user.email);
+    if (existingLogin) {
+      throw new ErroValidacao('E-mail já cadastrado.', 409);
     }
+
+    const existingUsername = await UsuariosRepository.findByLogin(user.username);
+    if (existingUsername) {
+      throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
+    }
+
+    const passwordHash = await argon2.hash(user.password || '');
+
+    const persistedUser = await UsuariosRepository.criar({
+      ...user,
+      tenant: tenant.name,
+      tenant_id: tenant.id,
+      password: passwordHash,
+    } as UsuarioModel);
+
+    if (!persistedUser.admin && moduleKeys.length > 0) {
+      await PermissoesRepository.replaceOverrides(
+        persistedUser.id,
+        this.resolveModuleOverrides(moduleKeys),
+      );
+    }
+
+    return sanitizarUsuario(persistedUser);
   }
 
   static async remover(user: UsuarioModel, tenantId: number) {
@@ -89,11 +64,6 @@ export default class UsuariosService {
 
     if (result[0].admin === true) {
       throw new ErroValidacao('Usuário administrador não pode ser removido.', 422);
-    }
-
-    if (result[0].keycloak_id) {
-      const adminToken = await KeycloakAdminService.getAdminToken();
-      await KeycloakAdminService.deleteUser(result[0].keycloak_id, adminToken);
     }
 
     return UsuariosRepository.remover(user, tenantId);
@@ -137,15 +107,13 @@ export default class UsuariosService {
     return sanitizarUsuario(updated);
   }
 
-  private static resolveRoleKeys(isAdmin: boolean, moduleKeys: string[]) {
-    const normalizedModuleKeys = (isAdmin && moduleKeys.length === 0)
-      ? ['operational', 'inventory', 'organization', 'notifications']
-      : moduleKeys;
-
-    return [...new Set(
-      normalizedModuleKeys
-        .map((moduleKey) => getRoleKeyForModule(moduleKey))
-        .filter((roleKey): roleKey is string => Boolean(roleKey)),
-    )];
+  private static resolveModuleOverrides(moduleKeys: string[]) {
+    const selectedModules = new Set(moduleKeys);
+    return obterCatalogooPermissao()
+      .filter((permission) => selectedModules.has(permission.module_key))
+      .map((permission) => ({
+        permission_key: permission.key,
+        effect: 'allow' as const,
+      }));
   }
 }

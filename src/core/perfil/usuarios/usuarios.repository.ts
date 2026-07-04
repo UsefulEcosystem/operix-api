@@ -37,11 +37,10 @@ class UsuariosRepository {
     const connect = await connection.connect();
     const result = await connect.query(
       `INSERT INTO users
-       (keycloak_id, tenant_id, name, username, email, password, root, admin, avatar_url, role_title, active, preferences)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, true), COALESCE($12, '{}'::jsonb))
+       (tenant_id, name, username, email, password, root, admin, avatar_url, role_title, active, preferences)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, true), COALESCE($11, '{}'::jsonb))
        RETURNING *`,
       [
-        user.keycloak_id,
         user.tenant_id,
         user.name,
         user.username,
@@ -57,6 +56,54 @@ class UsuariosRepository {
     );
     connect.release();
     return result.rows[0];
+  }
+
+  static async completarOnboarding(id: number, data: Partial<UsuarioModel> & { tenant_id: number }) {
+    const connect = await connection.connect();
+    const result = await connect.query(
+      `UPDATE users
+       SET tenant_id = $2,
+           name = $3,
+           username = $4,
+           root = true,
+           admin = true,
+           active = true,
+           updatedAt = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, data.tenant_id, data.name, data.username],
+    );
+    connect.release();
+    return result.rows[0] || null;
+  }
+
+  static async marcarEmailVerificado(id: number) {
+    const connect = await connection.connect();
+    const result = await connect.query(
+      `UPDATE users
+       SET email_verified_at = COALESCE(email_verified_at, NOW()),
+           active = true,
+           updatedAt = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id],
+    );
+    connect.release();
+    return result.rows[0] || null;
+  }
+
+  static async atualizarSenha(id: number, passwordHash: string) {
+    const connect = await connection.connect();
+    const result = await connect.query(
+      `UPDATE users
+       SET password = $2,
+           updatedAt = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [id, passwordHash],
+    );
+    connect.release();
+    return result.rows[0] || null;
   }
 
   static async atualizarPerfil(id: number, tenantId: number, data: Partial<UsuarioModel>) {
@@ -100,9 +147,9 @@ class UsuariosRepository {
     return result.rows[0] || null;
   }
 
-  static async findByKeycloakId(keycloakId: string) {
+  static async findById(id: number) {
     const connect = await connection.connect();
-    const result = await connect.query('SELECT * FROM users WHERE keycloak_id = $1', [keycloakId]);
+    const result = await connect.query('SELECT * FROM users WHERE id = $1', [id]);
     connect.release();
     return result.rows[0] || null;
   }
@@ -110,6 +157,23 @@ class UsuariosRepository {
   static async findByEmail(email: string) {
     const connect = await connection.connect();
     const result = await connect.query('SELECT * FROM users WHERE email = $1', [email]);
+    connect.release();
+    return result.rows[0] || null;
+  }
+
+  static async findByUsername(username: string) {
+    const connect = await connection.connect();
+    const result = await connect.query('SELECT * FROM users WHERE LOWER(username) = LOWER($1)', [username]);
+    connect.release();
+    return result.rows[0] || null;
+  }
+
+  static async findByLogin(login: string) {
+    const connect = await connection.connect();
+    const result = await connect.query(
+      'SELECT * FROM users WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)',
+      [login],
+    );
     connect.release();
     return result.rows[0] || null;
   }

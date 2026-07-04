@@ -22,11 +22,10 @@ class LocatariosRepository {
     const connect = await connection.connect();
     const result = await connect.query(
       `INSERT INTO ${this.tableName}
-       (keycloak_group_id,name,cnpj,description,logo_url,plan_key,subscription_status,trial_started_at,trial_ends_at,enabled_modules)
-       VALUES ($1, $2, $3, $4, $5, COALESCE($6, 'trial'), COALESCE($7, 'trialing'), COALESCE($8, NOW()), COALESCE($9, NOW() + INTERVAL '30 days'), COALESCE($10, '[]'::jsonb))
+       (name,cnpj,description,logo_url,plan_key,subscription_status,trial_started_at,trial_ends_at,enabled_modules)
+       VALUES ($1, $2, $3, $4, COALESCE($5, 'trial'), COALESCE($6, 'trialing'), COALESCE($7, NOW()), COALESCE($8, NOW() + INTERVAL '30 days'), COALESCE($9, '[]'::jsonb))
        RETURNING *`,
       [
-        tenant.keycloak_group_id,
         tenant.name,
         tenant.cnpj || null,
         tenant.description || null,
@@ -72,13 +71,6 @@ class LocatariosRepository {
     const result = await connect.query(`DELETE FROM ${this.tableName} WHERE id = $1`, [id]);
     connect.release();
     return result.rowCount;
-  }
-
-  static async findByKeycloakGroupId(keycloakGroupId: string) {
-    const connect = await connection.connect();
-    const result = await connect.query(`SELECT * FROM ${this.tableName} WHERE keycloak_group_id = $1`, [keycloakGroupId]);
-    connect.release();
-    return result.rows[0] || null;
   }
 
   static async findByName(name: string) {

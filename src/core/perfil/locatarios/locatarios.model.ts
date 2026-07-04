@@ -1,7 +1,6 @@
 export default class LocatarioModel {
   id: number | null;
   name: string;
-  keycloak_group_id: string;
   cnpj?: string | null;
   description?: string | null;
   logo_url?: string | null;
@@ -14,7 +13,6 @@ export default class LocatarioModel {
   constructor(
     { id = null,
       name = '',
-      keycloak_group_id = '',
       cnpj = null,
       description = null,
       logo_url = null,
@@ -26,7 +24,6 @@ export default class LocatarioModel {
     }: any = {}) {
     this.id = id;
     this.name = name;
-    this.keycloak_group_id = keycloak_group_id;
     this.cnpj = cnpj;
     this.description = description;
     this.logo_url = logo_url;
@@ -41,7 +38,6 @@ export default class LocatarioModel {
     return new LocatarioModel({
       id: body.id || null,
       name: body.name,
-      keycloak_group_id: body.keycloak_group_id,
       cnpj: body.cnpj || null,
       description: body.description || null,
       logo_url: body.logo_url || null,
@@ -57,7 +53,6 @@ export default class LocatarioModel {
     return {
       id: this.id,
       name: this.name,
-      keycloak_group_id: this.keycloak_group_id,
       cnpj: this.cnpj,
       description: this.description,
       logo_url: this.logo_url,

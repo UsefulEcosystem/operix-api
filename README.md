@@ -4,79 +4,67 @@ API REST do Operix Service para autenticação, multi-tenancy, RBAC, módulos, p
 
 ## Visão Geral
 
-O backend é o ponto central de segurança e regra de negócio. Ele valida tokens Keycloak via JWKS, resolve o tenant do usuário, aplica permissões granulares, calcula módulos habilitados por plano/trial/modo de implantação e protege todas as rotas privadas independentemente do frontend.
+O backend é o ponto central de segurança e regra de negócio. Ele emite e valida JWT próprio, mantém refresh tokens opacos em cookie HttpOnly, resolve o tenant do usuário, aplica permissões granulares e protege todas as rotas privadas independentemente do frontend.
 
 Responsabilidades principais:
 
-- autenticação via Keycloak e SSO Google;
-- onboarding de empresa após primeiro login;
+- autenticação local com usuário/senha;
+- autenticação social Google via OAuth/OIDC direto;
+- access token JWT curto e refresh token opaco com rotação obrigatória;
+- logout com revogação de refresh token e blacklist de access token até expirar;
 - criação e isolamento de tenants;
-- RBAC com roles de módulo e overrides granulares por usuário;
+- RBAC com roles locais e overrides granulares por usuário;
 - políticas de modo `LOCAL` e `SAAS`;
 - plano/trial/feature flags;
-- rotas operacionais, estoque, notificações, logs e profile;
+- rotas operacionais, estoque, notificações, logs e perfil;
 - documentação OpenAPI em `/docs`.
-
-Comunicação:
-
-- frontend chama a API em `/api/*`;
-- API valida JWT emitido pelo Keycloak;
-- API usa PostgreSQL para dados locais;
-- API usa Keycloak Admin API para grupos, usuários e roles;
-- Socket.IO publica eventos por sala `tenant_<id>`.
 
 ## Arquitetura
 
 ```text
 src/
   core/
-    auth/                  Autenticação, callback OIDC, refresh, onboarding e integração Keycloak
+    autenticacao/          Login local, Google OAuth, JWT, refresh e onboarding
     config/                Ambiente e modo de implantação
     database/              Pool PostgreSQL
     docs/                  OpenAPI agregado
-    logs/                  Logs operacionais por tenant
+    registros/             Logs operacionais por tenant
     middlewares/           Auth, permissões, roles, segurança, erros e validação
-    profile/
-      permissions/         Catálogo de módulos, permissões, planos, trial e overrides
-      tenants/             Tenants, policy LOCAL/SAAS, empresa e assinatura
-      users/               Usuários do tenant, RBAC e acesso administrativo
-      profile-settings.*   Perfil, empresa e sistema
+    perfil/
+      permissoes/          Catálogo de módulos, permissões, planos, trial e overrides
+      locatarios/          Tenants, política LOCAL/SAAS, empresa e assinatura
+      usuarios/            Usuários do tenant, RBAC e acesso administrativo
     schemas/               Schemas de resposta e helpers Zod/OpenAPI
-    utils/                 Sanitização, respostas, messaging e validação
+    utils/                 Sanitização, respostas, mensageria e validação
   database/
     migrations/            Evolução do schema PostgreSQL
   modules/
-    inventory/             Estoque
-    notifications/         Informações e alertas do sistema
-    operational/           Serviços, OS, status e tipos de produto
+    inventario/            Estoque
+    notificacoes/          Informações e alertas do sistema
+    operacional/           Serviços, OS, status e tipos de produto
 tests/
   unit/                    Policies, permissões, onboarding e services
   integration/             Rotas HTTP principais
 ```
 
-Padrões usados:
+## Autenticação
 
-- `controller`: HTTP e resposta;
-- `service`: regra de negócio;
-- `repository`: persistência;
-- `schema`: validação de entrada;
-- `middleware`: autenticação/autorização transversal;
-- `catalog/policy`: regras estáveis e reutilizáveis.
+Fluxos disponíveis:
 
-## Fluxo de Autenticação e Cadastro
+- `POST /api/autenticacao/onboarding`: cria o primeiro tenant e o usuário proprietário.
+- `POST /api/autenticacao/login`: autentica por e-mail/usuário e senha.
+- `POST /api/autenticacao/autorizar`: gera URL Google OAuth com PKCE.
+- `POST /api/autenticacao/retorno`: troca o `code` Google por sessão local.
+- `POST /api/autenticacao/renovar`: rotaciona refresh token e emite novo access token.
+- `POST /api/autenticacao/sair`: revoga refresh token e coloca o access token em blacklist.
+- `GET /api/autenticacao/eu`: retorna usuário, permissões efetivas e snapshot de acesso.
 
-Existe um único fluxo de cadastro de empresa:
+Contrato de sessão:
 
-1. usuário acessa o app;
-2. frontend inicia login Google via Keycloak usando Authorization Code + PKCE;
-3. backend troca `code` por tokens em `/api/auth/callback`;
-4. backend valida o token pelo JWKS;
-5. se o usuário não tem tenant, retorna `onboarding_required`;
-6. frontend exibe onboarding;
-7. `/api/auth/onboarding` cria tenant, grupo Keycloak, usuário local proprietário e roles;
-8. usuário passa a acessar o sistema com permissões calculadas.
-
-O endpoint público legado `/api/auth/register` foi removido para evitar duplicidade. Usuários internos da empresa são criados por administradores em `/api/users`.
+- o access token é retornado no JSON como `token`;
+- o refresh token não é retornado no JSON;
+- o refresh token é enviado em cookie `HttpOnly`, `SameSite=Lax`, `Secure` em produção;
+- clientes web devem manter o access token em memória e chamar refresh com credenciais/cookies habilitados.
 
 ## Modos de Implantação
 
@@ -88,86 +76,20 @@ O endpoint público legado `/api/auth/register` foi removido para evitar duplici
 - planos, cobrança e assinatura não bloqueiam recursos;
 - todos os módulos ficam habilitados.
 
+Google OAuth:
+
+- o `redirect_uri` cadastrado no Google Cloud precisa ser um callback HTML real, sem fragmento `#`;
+- ambiente local: `http://localhost:3000/oauth/callback.html`;
+- produção: `https://seu-dominio/oauth/callback.html`;
+- o callback HTML redireciona para `#/auth/callback` dentro do SPA.
+
 `DEPLOYMENT_MODE=SAAS`
 
 - permite múltiplos tenants;
-- permissões dependem de plano, trial, roles e overrides;
+- permissões dependem de plano, trial, roles locais e overrides;
 - trial gratuito dura 30 dias;
 - trial ativo libera acesso completo;
 - trial vencido cai para o plano configurado, atualmente `free` por padrão.
-
-## Planos, Trial e Feature Flags
-
-Catálogo em `src/core/profile/permissions/plans.catalog.ts`:
-
-- `free`: acesso básico;
-- `trial`: acesso completo por 30 dias;
-- `starter`: operação e organização;
-- `professional`: operação, organização, estoque e notificações;
-- `enterprise`: acesso completo e base para SSO corporativo.
-
-Cada plano define:
-
-- `module_keys`;
-- `feature_flags`;
-- permissões máximas permitidas.
-
-O snapshot efetivo do usuário fica em `/api/permissions/me`:
-
-```json
-{
-  "effective_permissions": ["dashboard.access"],
-  "access": {
-    "enabled_modules": ["dashboard", "operational"],
-    "feature_flags": ["users.basic"],
-    "trial": { "active": true, "days_remaining": 30 }
-  }
-}
-```
-
-## RBAC e Permissões
-
-Roles de módulo:
-
-- `module:operational`;
-- `module:inventory`;
-- `module:organization`;
-- `module:notifications`.
-
-Permissões granulares atuais:
-
-- `dashboard.access`;
-- `operational.services.access`;
-- `operational.status.access`;
-- `operational.types-products.access`;
-- `inventory.stock.access`;
-- `organization.users.access`;
-- `organization.settings.access`;
-- `organization.tenants.access`;
-- `notifications.system-info.access`.
-
-Regras:
-
-- frontend esconde menus sem permissão;
-- backend sempre valida com `PermissionsMiddleware.requirePermission`;
-- overrides por usuário podem permitir/negar permissões dentro dos limites do plano;
-- em `LOCAL`, proprietário/root tem full access.
-
-## Profile e Configurações
-
-Rotas:
-
-- `GET /api/profile/me`;
-- `PATCH /api/profile/me`;
-- `GET /api/profile/company`;
-- `PATCH /api/profile/company`;
-- `GET /api/profile/system`.
-
-Cobrem:
-
-- perfil: nome, email, avatar, cargo, preferências;
-- empresa: nome, CNPJ, descrição, logo, módulos;
-- sistema: plano, trial, feature flags, permissões e catálogo.
 
 ## Ambiente Local
 
@@ -175,9 +97,7 @@ Pré-requisitos:
 
 - Bun `>=1.3.9`;
 - Docker;
-- Docker Compose;
-- PostgreSQL via compose;
-- Keycloak via compose.
+- Docker Compose.
 
 Setup:
 
@@ -192,56 +112,28 @@ bun run dev
 URLs:
 
 - API: `http://localhost:3333`;
-- health: `http://localhost:3333/health`;
-- docs: `http://localhost:3333/docs`;
-- Keycloak: `http://localhost:8080`;
-- PgAdmin: conforme compose.
+- health: `http://localhost:3333/saude`;
+- docs: `http://localhost:3333/docs`.
 
 Variáveis principais:
 
 ```env
-APP_NAME=operix-service
+APP_NAME=Operix Service
 PORT=3333
 NODE_ENV=development
 ORIGIN=http://localhost:3000,http://localhost:5173
 DEPLOYMENT_MODE=LOCAL
 FRONTEND_URL=http://localhost:5173
 DATABASE_URL=postgresql://admin:admin@localhost:5432/operix-service
-KEYCLOAK_URL=http://localhost:8080
-KEYCLOAK_REALM=operix-service
-KEYCLOAK_CLIENT_ID=operix-service-app
-KEYCLOAK_JWKS_URI=http://localhost:8080/realms/operix-service/protocol/openid-connect/certs
-KEYCLOAK_ISSUER=http://localhost:8080/realms/operix-service
+JWT_SECRET=change-this-secret-in-production
+JWT_ISSUER=operix-service-api
+JWT_AUDIENCE=operix-service-app
+ACCESS_TOKEN_TTL_SECONDS=900
+REFRESH_TOKEN_TTL_DAYS=30
+REFRESH_COOKIE_NAME=operix_refresh_token
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
 ```
-
-Keycloak:
-
-- importe `config/realm-export.json`;
-- configure o Identity Provider Google com alias `google`;
-- configure redirect URI do frontend;
-- mantenha o client público com PKCE `S256`.
-- o client `operix-admin-client` precisa da service account com roles de `realm-management` como `query-groups`, `manage-groups`, `query-users` e `manage-users`;
-- se o volume do Keycloak já existir, recrie o ambiente para reimportar o realm atualizado: `docker compose -f compose.yaml down -v` e depois `bun run docker:dev`.
-
-## SaaS e Produção
-
-Checklist recomendado:
-
-- `DEPLOYMENT_MODE=SAAS`;
-- Keycloak externo ou clusterizado;
-- PostgreSQL gerenciado com backups automáticos;
-- reverse proxy com Nginx, Traefik ou ingress;
-- HTTPS obrigatório;
-- `ORIGIN` restrito aos domínios reais;
-- segredos fora do repositório;
-- rotação de credenciais Keycloak/Admin;
-- logs centralizados;
-- métricas de API, banco e fila futura;
-- migrations versionadas no deploy;
-- healthcheck no orquestrador;
-- backups testados;
-- hardening de headers e rate limit na borda;
-- CI/CD com typecheck, testes, build e migrações controladas.
 
 ## Scripts
 
@@ -260,64 +152,35 @@ Checklist recomendado:
 
 ## Testes
 
-Cobertura atual relevante:
-
-- onboarding com Keycloak;
-- restrição de tenant em `LOCAL`;
-- permissões e overrides;
-- plano/trial;
-- queda para plano free após trial;
-- typecheck e build.
-
-Comandos:
+Comandos recomendados:
 
 ```bash
 bun run typecheck
-bun test tests/unit/auth.service.test.ts tests/unit/tenant-policy.service.test.ts tests/unit/permissions.service.test.ts
+bun run test
 bun run build
 ```
 
-Observação: alguns testes de integração usam `supertest` com porta dinâmica e podem falhar em sandboxes que bloqueiam `listen(0)`.
+Alguns testes de integração usam `supertest` com porta dinâmica e podem falhar em sandboxes que bloqueiam `listen(0)`.
 
 ## Segurança
 
-- JWT validado por issuer e JWKS;
-- token sem tenant só acessa onboarding/me;
+- JWT local validado por issuer, audience, assinatura HS256 e `jti`;
+- refresh token opaco persistido somente como hash;
+- rotação obrigatória de refresh token;
+- logout revoga refresh token e invalida access token até sua expiração;
 - rotas privadas passam por auth global;
-- permissões validadas no backend;
+- permissões são validadas no backend;
 - isolamento por `tenant_id`;
 - respostas de usuário passam por sanitização;
-- criação de tenant em `LOCAL` usa advisory lock;
-- rollback remove tenant/grupo quando onboarding falha;
-- senha não é persistida localmente;
-- login social é delegado ao Keycloak.
+- criação de tenant em `LOCAL` usa advisory lock.
 
 ## Troubleshooting
 
-- `Token inválido`: confira `KEYCLOAK_ISSUER`, realm e relógio dos containers.
+- `Token expirado`: chame `/api/autenticacao/renovar` com cookies habilitados.
+- `Refresh token inválido ou expirado`: faça login novamente.
 - `onboarding bloqueado`: em `LOCAL`, já existe tenant.
-- `sem permissão`: confira `/api/permissions/me`, roles Keycloak e overrides.
-- `Google não abre`: confirme alias `google` no Keycloak.
-- `CORS`: ajuste `ORIGIN`.
-- `migration falha`: confira ordem e banco definido em `DATABASE_URL`.
-
-## Roadmap
-
-- billing com gateway de pagamento;
-- upgrade/downgrade de planos;
-- webhooks de pagamento;
-- auditoria detalhada por entidade;
-- analytics de uso por tenant;
-- PWA/mobile;
-- SSO corporativo SAML/OIDC enterprise;
-- white-label por tenant;
-- marketplace de módulos;
-- API pública com tokens por integração;
-- filas assíncronas para notificações e relatórios;
-- dashboards avançados;
-- observabilidade com tracing;
-- rate limiting por tenant;
-- feature toggles operacionais;
-- automações de atendimento;
-- IA para resumo de OS, sugestões e classificação;
-- permissões avançadas por escopo, campo e ação.
+- `sem permissão`: confira `/api/permissoes/eu`, roles locais e overrides.
+- `Google não abre`: confira `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e redirect URI no Google Cloud.
+- `Erro 400 invalid_request no Google`: confirme que o `redirect_uri` cadastrado é exatamente `http://localhost:3000/oauth/callback.html` em local ou `https://seu-dominio/oauth/callback.html` em produção; não use `#/auth/callback`.
+- `CORS`: ajuste `ORIGIN` e envie cookies pelo frontend.
+- `migration falha`: confira ordem das migrations e banco definido em `DATABASE_URL`.

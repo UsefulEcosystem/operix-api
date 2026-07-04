@@ -5,7 +5,6 @@ export default class UsuarioModel {
   name: string;
   tenant?: string | null;
   tenant_id: number | null;
-  keycloak_id?: string | null;
   password?: string | null;
   admin?: boolean | null;
   root?: boolean | null;
@@ -19,7 +18,6 @@ export default class UsuarioModel {
     username = '',
     email = '',
     tenant_id = null,
-    keycloak_id = null,
     password = null,
     admin = false,
     root = false,
@@ -34,7 +32,6 @@ export default class UsuarioModel {
     this.username = username;
     this.email = email;
     this.tenant_id = tenant_id;
-    this.keycloak_id = keycloak_id;
     this.password = password;
     this.admin = admin;
     this.root = root;
@@ -49,7 +46,6 @@ export default class UsuarioModel {
   static deRequisicao(body: any = {}): UsuarioModel {
     return new UsuarioModel(
       {
-        keycloak_id: body.keycloak_id || null,
         tenant_id: body.tenant_id || null,
         id: body.id || null,
         name: body.name,
@@ -79,7 +75,6 @@ export default class UsuarioModel {
       email: this.email,
       tenant: this.tenant,
       tenant_id: this.tenant_id,
-      keycloak_id: this.keycloak_id,
       admin: this.admin,
       root: this.root,
       avatar_url: this.avatar_url,

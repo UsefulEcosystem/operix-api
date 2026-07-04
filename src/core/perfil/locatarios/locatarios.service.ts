@@ -1,5 +1,4 @@
 import ErroValidacao from '../../utils/erro-validacao.js';
-import KeycloakAdminService from '../../autenticacao/keycloak-admin.service.js';
 import LocatarioModel from './locatarios.model.js';
 import LocatariosRepository from './locatarios.repository.js';
 import PoliticaLocatarioService from './politica-locatario.service.js';
@@ -19,22 +18,11 @@ class LocatariosService {
         throw new ErroValidacao('Unidade já cadastrada.', 409);
       }
 
-      const adminToken = await KeycloakAdminService.getAdminToken();
-      const { groupId, created } = await KeycloakAdminService.ensureGroupExists(tenantName, adminToken);
-
-      try {
-        return await LocatariosRepository.criar(LocatarioModel.deRequisicao({
-          name: tenantName,
-          keycloak_group_id: groupId,
-          cnpj: tenant.cnpj,
-          description: tenant.description,
-        }));
-      } catch (error) {
-        if (created) {
-          await KeycloakAdminService.deleteGroup(groupId, adminToken);
-        }
-        throw error;
-      }
+      return LocatariosRepository.criar(LocatarioModel.deRequisicao({
+        name: tenantName,
+        cnpj: tenant.cnpj,
+        description: tenant.description,
+      }));
     });
   }
 

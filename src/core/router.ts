@@ -19,10 +19,10 @@ router.get('/saude', (_req, res) => res.status(200).json({ status: 'ok', service
 router.use('/docs', serve);
 router.get('/docs', setup(openApiDocument));
 
-// Rotas públicas de Autenticação/Proxy para o Keycloak
+// Rotas públicas de autenticação local
 router.use('/api/autenticacao', authRouter);
 
-// Middleware Global de Auth do Keycloak
+// Middleware global de autenticação JWT
 router.use('/api', AutenticacaoMiddleware.autenticarToken);
 
 // Rotas Modulares

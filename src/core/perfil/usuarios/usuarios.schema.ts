@@ -8,7 +8,6 @@ const userSchema = z.object({
   email: z.string().email(),
   tenant: z.string().nullable().optional(),
   tenant_id: z.number().nullable().optional(),
-  keycloak_id: z.string().nullable().optional(),
   password: z.string().nullable().optional(),
   admin: z.boolean().nullable().optional(),
   root: z.boolean().nullable().optional(),

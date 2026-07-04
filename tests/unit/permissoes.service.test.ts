@@ -59,6 +59,22 @@ describe('PermissoesService', () => {
     expect(snapshot.access.full_access).toBe(true);
   });
 
+  test('admin libera todas as permissões independentemente do plano', () => {
+    env.deploymentMode = 'SAAS';
+    const access = buildPlanContext({ plan_key: 'free' });
+    const snapshot = PermissoesService.construirSnapshotPermissao({
+      roles: [],
+      overrides: [],
+      fullAccess: true,
+      planPermissaoKeys: access.permission_keys,
+      planContext: access,
+    });
+
+    expect(snapshot.effective_permissions).toContain('operational.services.access');
+    expect(snapshot.effective_permissions).toContain('organization.users.access');
+    expect(snapshot.effective_permissions).toContain('inventory.stock.access');
+  });
+
   test('trial SaaS mantém acesso completo por 30 dias', () => {
     env.deploymentMode = 'SAAS';
     const access = buildPlanContext({

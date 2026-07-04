@@ -17,6 +17,7 @@ const serviceSchema = z.object({
   updated_at_service: z.string().nullable().optional(),
   updated_at_payment: z.string().nullable().optional(),
   created_at_warehouse: z.string().nullable().optional(),
+  typeTable: z.number().optional(),
 }).openapi('Service');
 
 const serviceCreateSchema = serviceSchema.pick({
@@ -26,6 +27,7 @@ const serviceCreateSchema = serviceSchema.pick({
   adress: true,
   observation: true,
   status: true,
+  typeTable: true,
 }).extend({
   product: z.string().min(1, 'Campo "Produto" é obrigatório.'),
   client: z.string().min(1, 'Campo "Cliente" é obrigatório.'),
@@ -33,6 +35,7 @@ const serviceCreateSchema = serviceSchema.pick({
   adress: z.string().optional(),
   observation: z.string().optional(),
   status: z.union([z.string(), z.number()]).refine((val) => val !== '', { message: 'Campo "Status" é obrigatório.' }),
+  typeTable: z.number().optional().default(1),
 }).openapi('ServiceCreate');
 
 const serviceUpdateInfoClientSchema = serviceSchema.pick({
@@ -41,6 +44,7 @@ const serviceUpdateInfoClientSchema = serviceSchema.pick({
   telephone: true,
   adress: true,
   observation: true,
+  typeTable: true,
 }).openapi('ServiceUpdateInfoClient');
 
 const serviceResponseSchema = buildApiResponseSchema(serviceSchema, 'ServiceResponse');

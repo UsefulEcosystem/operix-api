@@ -6,7 +6,6 @@ type UserLike = {
   email?: string | null;
   tenant?: string | null;
   tenant_id?: number | null;
-  keycloak_id?: string | null;
   admin?: boolean | null;
   root?: boolean | null;
   onboarding_required?: boolean | null;
@@ -26,13 +25,12 @@ export function sanitizarUsuario(user: UserLike | null | undefined) {
 
   return {
     id: user.id ?? null,
-    sub: user.sub ?? user.keycloak_id ?? null,
+    sub: user.sub ?? (user.id != null ? String(user.id) : null),
     name: user.name ?? null,
     username: user.username ?? null,
     email: user.email ?? null,
     tenant: user.tenant ?? null,
     tenant_id: user.tenant_id ?? null,
-    keycloak_id: user.keycloak_id ?? null,
     admin: Boolean(user.admin),
     root: Boolean(user.root),
     onboarding_required: Boolean(user.onboarding_required),

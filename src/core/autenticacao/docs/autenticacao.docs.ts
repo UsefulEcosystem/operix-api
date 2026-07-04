@@ -5,12 +5,18 @@ import {
   authCallbackResponseSchema,
   authCallbackSchema,
   authConfigResponseSchema,
+  authForgotPasswordSchema,
+  authGenericResponseSchema,
   authLoginResponseSchema,
   authLoginSchema,
   authMeResponseSchema,
   authOnboardingResponseSchema,
   authRefreshResponseSchema,
   authRefreshSchema,
+  authRegisterResponseSchema,
+  authRegisterSchema,
+  authResetPasswordSchema,
+  authVerifyEmailSchema,
   onboardingSchema,
 } from '../autenticacao.schema.js';
 
@@ -21,6 +27,10 @@ export function registerAuthDocs(registry: OpenAPIRegistry) {
   registry.register('AuthCallback', authCallbackSchema);
   registry.register('AuthLogin', authLoginSchema);
   registry.register('AuthRefresh', authRefreshSchema);
+  registry.register('AuthRegister', authRegisterSchema);
+  registry.register('AuthVerifyEmail', authVerifyEmailSchema);
+  registry.register('AuthForgotPassword', authForgotPasswordSchema);
+  registry.register('AuthResetPassword', authResetPasswordSchema);
   registry.register('Onboarding', onboardingSchema);
 
   registry.registerPath({
@@ -70,6 +80,58 @@ export function registerAuthDocs(registry: OpenAPIRegistry) {
       200: {
         description: 'Login realizado com sucesso',
         content: { 'application/json': { schema: authLoginResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/autenticacao/registrar',
+    tags: ['Autenticação'],
+    request: { body: { content: { 'application/json': { schema: authRegisterSchema } }, required: true } },
+    responses: {
+      201: {
+        description: 'Cadastro iniciado com verificação de e-mail',
+        content: { 'application/json': { schema: authRegisterResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/autenticacao/verificar-email',
+    tags: ['Autenticação'],
+    request: { body: { content: { 'application/json': { schema: authVerifyEmailSchema } }, required: true } },
+    responses: {
+      200: {
+        description: 'E-mail verificado e sessão iniciada',
+        content: { 'application/json': { schema: authLoginResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/autenticacao/recuperar-senha',
+    tags: ['Autenticação'],
+    request: { body: { content: { 'application/json': { schema: authForgotPasswordSchema } }, required: true } },
+    responses: {
+      200: {
+        description: 'Solicitação de recuperação aceita',
+        content: { 'application/json': { schema: authGenericResponseSchema } },
+      },
+    },
+  });
+
+  registry.registerPath({
+    method: 'post',
+    path: '/autenticacao/redefinir-senha',
+    tags: ['Autenticação'],
+    request: { body: { content: { 'application/json': { schema: authResetPasswordSchema } }, required: true } },
+    responses: {
+      200: {
+        description: 'Senha redefinida com sucesso',
+        content: { 'application/json': { schema: authGenericResponseSchema } },
       },
     },
   });

@@ -1,27 +1,21 @@
 services:
   api:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      restart: unless-stopped
-      env_file:
-        - .env
-      environment:
-        NODE_ENV: development
-        DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-        KEYCLOAK_URL: http://keycloak:8080
-        KEYCLOAK_PUBLIC_URL: ${KEYCLOAK_PUBLIC_URL:-http://localhost:8080}
-        KEYCLOAK_JWKS_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}/protocol/openid-connect/certs
-        KEYCLOAK_ISSUER: http://keycloak:8080/realms/${KEYCLOAK_REALM}
-      ports:
-        - "${PORT:-3333}:3333"
-      depends_on:
-        postgres:
-          condition: service_healthy
-        keycloak:
-          condition: service_started
-      networks:
-        - operix-network
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports:
+      - "${PORT:-3333}:3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - operix-network
         
   postgres:
     image: postgres:14-alpine
@@ -34,7 +28,6 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./config/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
@@ -43,47 +36,10 @@ services:
     networks:
       - operix-network
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.0.7
-    command: >
-      sh -c '
-        CERT_DIR=/etc/x509/https;
-        CERT_CRT=$CERT_DIR/keycloak.crt;
-        CERT_KEY=$CERT_DIR/keycloak.key;
-        if [ ! -f "$CERT_CRT" ] || [ ! -f "$CERT_KEY" ]; then
-          echo "Gerando certificado autoassinado para Keycloak...";
-          mkdir -p "$CERT_DIR";
-          openssl req -x509 -newkey rsa:4096 -keyout "$CERT_KEY" -out "$CERT_CRT" -days 365 -nodes -subj "/CN=localhost";
-        fi;
-        /opt/keycloak/bin/kc.sh start-dev --import-realm --https-certificate-file=$CERT_CRT --https-certificate-key-file=$CERT_KEY --https-port=8080
-      '
-    restart: unless-stopped
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: ${POSTGRES_USER}
-      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "${KEYCLOAK_PORT:-8080}:${KEYCLOAK_PORT:-8080}"
-    volumes:
-      - ./config:/opt/keycloak/data/import
-      - keycloak-data:/opt/keycloak/data
-      - keycloak-certs:/etc/x509/https
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - operix-network
-
-
 volumes:
   bun-modules:
   bun-cache:
   postgres-data:
-  keycloak-data:
-  keycloak-certs:
 
 networks:
   operix-network:

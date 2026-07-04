@@ -1,7 +1,6 @@
 import ErroValidacao from '../../utils/erro-validacao.js';
 import { sanitizarUsuario } from '../../utils/sanitizar.js';
 import UsuariosRepository from '../usuarios/usuarios.repository.js';
-import KeycloakAdminService from '../../autenticacao/keycloak-admin.service.js';
 import PermissoesRepository from './permissoes.repository.js';
 import LocatarioRepository from '../locatarios/locatarios.repository.js';
 import { env } from '../../config/env.js';
@@ -31,6 +30,14 @@ type AuthenticatedUser = {
   email?: string | null;
 };
 
+type AccessPlanContext = ReturnType<typeof buildPlanContext> & {
+  tenant_name?: string;
+  company_name?: string;
+  tenant_logo_url?: string;
+  company_logo_url?: string;
+  tenant_id?: number;
+};
+
 export default class PermissoesService {
   static obterCatalogo() {
     const permissions = obterCatalogooPermissao();
@@ -44,7 +51,7 @@ export default class PermissoesService {
 
   static async obterPermissoesUsuarioAtual(user: AuthenticatedUser) {
     const tenant = user.tenant_id ? await LocatarioRepository.findById(user.tenant_id) : null;
-    const planContext = buildPlanContext(tenant);
+    const planContext: AccessPlanContext = buildPlanContext(tenant);
     if (tenant?.name) {
       planContext.tenant_name = tenant.name;
       planContext.company_name = tenant.name;
@@ -59,10 +66,10 @@ export default class PermissoesService {
     const overrides = user.id ? await PermissoesRepository.getOverridesByUserId(user.id) : [];
 
     return this.construirSnapshotPermissao({
-      roles: user.roles || [],
+      roles: this.obterRolesLocais(user),
       overrides,
       planPermissaoKeys: planContext.permission_keys,
-      fullAccess: env.deploymentMode === 'LOCAL' || Boolean(user.root),
+      fullAccess: env.deploymentMode === 'LOCAL' || Boolean(user.root) || Boolean(user.admin),
       planContext,
     });
   }
@@ -77,12 +84,10 @@ export default class PermissoesService {
       throw new ErroValidacao('Usuário não encontrado.', 404);
     }
 
-    const roles = usuarioAlvo.keycloak_id
-      ? await KeycloakAdminService.obterUsuarioRealmRoleNames(usuarioAlvo.keycloak_id)
-      : [];
+    const roles = this.obterRolesLocais(usuarioAlvo);
     const overrides = await PermissoesRepository.getOverridesByUserId(usuarioAlvoId);
     const tenant = await LocatarioRepository.findById(actor.tenant_id);
-    const planContext = buildPlanContext(tenant);
+    const planContext: AccessPlanContext = buildPlanContext(tenant);
     if (tenant?.name) {
       planContext.tenant_name = tenant.name;
       planContext.company_name = tenant.name;
@@ -222,5 +227,19 @@ export default class PermissoesService {
 
   static obterDefinicaoPermissao(permissionKey: string) {
     return obterCatalogooPermissaoItem(permissionKey);
+  }
+
+  static obterRolesLocais(user: AuthenticatedUser) {
+    if (user.roles?.length) {
+      return user.roles;
+    }
+
+    if (!user.admin && !user.root) {
+      return [];
+    }
+
+    return getManageableModuleCatalog()
+      .map((module) => module.role_key)
+      .filter((roleKey): roleKey is string => Boolean(roleKey));
   }
 }
