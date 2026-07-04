@@ -8,6 +8,7 @@ function runMigrations() {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
+      shell: true
     });
 
     child.on('error', reject);
