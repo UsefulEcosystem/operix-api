@@ -5,6 +5,7 @@ import { generateOpenApiDocument } from './docs/openapi.js';
 import AutenticacaoMiddleware from './middlewares/autenticacao.middleware.js';
 import { operationalRouter } from '../modules/operacional/index.js';
 import { inventoryRouter } from '../modules/inventario/index.js';
+import { configuracoesRouter } from '../modules/configuracoes/index.ts';
 import { profileRouter } from './perfil/index.js';
 import { notificationsRouter } from '../modules/notificacoes/index.js';
 import authRouter from './autenticacao/autenticacao.routes.js';
@@ -26,6 +27,7 @@ router.use('/api/autenticacao', authRouter);
 router.use('/api', AutenticacaoMiddleware.autenticarToken);
 
 // Rotas Modulares
+router.use('/api', configuracoesRouter);
 router.use('/api', operationalRouter);
 router.use('/api', inventoryRouter);
 router.use('/api', profileRouter);

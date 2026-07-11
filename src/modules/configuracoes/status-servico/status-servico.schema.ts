@@ -1,11 +1,10 @@
-import { buildApiListResponseSchema, buildApiResponseSchema } from '../../../core/schemas/api-response.schema.js';
-import { z } from '../../../core/schemas/zod-openapi.js';
+import { buildApiListResponseSchema, buildApiResponseSchema } from '../../../core/schemas/api-response.schema.ts';
+import { z } from '../../../core/schemas/zod-openapi.ts';
 
 const statusServiceSchema = z.object({
   id: z.number().nullable().optional(),
   tenant_id: z.number().nullable().optional(),
   description: z.string().min(1),
-  cod: z.number().nullable().optional(),
   color: z.string().optional(),
 }).openapi('StatusServico');
 

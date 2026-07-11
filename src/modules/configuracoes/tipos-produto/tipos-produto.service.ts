@@ -1,5 +1,5 @@
 // @ts-nocheck
-import TiposProdutoRepository from './tipos-produto.repository.js';
+import TiposProdutoRepository from './tipos-produto.repository.ts';
 
 class TiposProdutoService {
   static async obterTodos(tenant_id) { return TiposProdutoRepository.obterTodos(tenant_id); }

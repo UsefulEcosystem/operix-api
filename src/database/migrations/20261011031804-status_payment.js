@@ -22,14 +22,13 @@ export default {
         allowNull: false,
         type: Sequelize.STRING,
       },
-      cod: {
-        allowNull: false,
-        autoIncrement: true,
-        type: Sequelize.INTEGER,
-      },
       color: {
         allowNull: false,
         type: Sequelize.STRING,
+      },
+      is_default: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN,
       },
       createdAt: {
         allowNull: false,

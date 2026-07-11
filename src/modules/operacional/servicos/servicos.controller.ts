@@ -11,26 +11,12 @@ export default class ServicosController {
     return ManipuladorResposta.sucesso(res, services, 'Serviços listados com sucesso');
   }
 
-  static async obterTodosAlmoxarifado(req: Request, res: Response) {
-    const { tenant_id } = (req as any).user;
-    const services = await ServicosService.obterTodosAlmoxarifado(tenant_id);
-    return ManipuladorResposta.sucesso(res, services, 'Serviços do almoxerifado listados com sucesso');
-  }
-
   static async criar(req: Request, res: Response) {
     const { tenant_id } = (req as any).user;
     const serviceData = ServicoModel.deRequisicao({ ...req.body, tenant_id });
     const created = await ServicosService.criar(serviceData);
     MensageriaService.notificarLocatario(tenant_id, '@service/created', created);
     return ManipuladorResposta.sucesso(res, created, 'Serviço criado com sucesso', 201);
-  }
-
-  static async atualizarAlmoxarifado(req: Request, res: Response) {
-    const { tenant_id } = (req as any).user;
-    const { id, value } = req.params;
-    const { typeTable } = req.body;
-    const result = await ServicosService.atualizarAlmoxarifado(id, tenant_id, value, typeTable);
-    return ManipuladorResposta.sucesso(res, result, 'Status do almoxerifado atualizado com sucesso');
   }
 
   static async atualizarInfoCliente(req: Request, res: Response) {
@@ -42,26 +28,25 @@ export default class ServicosController {
 
   static async atualizarStatusServico(req: Request, res: Response) {
     const { tenant_id } = (req as any).user;
-    const { id, status } = req.params;
-    const { typeTable } = req.body;
-    const result = await ServicosService.atualizarStatusServico(id, tenant_id, status, typeTable);
-    MensageriaService.notificarLocatario(tenant_id, '@service/status_updated', { id, status, result });
+    const { id } = req.params;
+    const { status_id } = req.body;
+    const result = await ServicosService.atualizarStatusServico(id, tenant_id, status_id);
+    MensageriaService.notificarLocatario(tenant_id, '@service/status_updated', { id, status_id, result });
     return ManipuladorResposta.sucesso(res, result, 'Status do serviço atualizado com sucesso');
   }
 
   static async atualizarStatusPagamento(req: Request, res: Response) {
     const { tenant_id } = (req as any).user;
-    const { id, status } = req.params;
-    const { typeTable } = req.body;
-    const result = await ServicosService.atualizarStatusPagamento(id, tenant_id, status, typeTable);
-    MensageriaService.notificarLocatario(tenant_id, '@service/payment_updated', { id, status, result });
+    const { id, payment_status_id } = req.params;
+    const result = await ServicosService.atualizarStatusPagamento(id, tenant_id, payment_status_id);
+    MensageriaService.notificarLocatario(tenant_id, '@service/payment_updated', { id, payment_status_id, result });
     return ManipuladorResposta.sucesso(res, result, 'Status do pagamento atualizado com sucesso');
   }
 
   static async remover(req: Request, res: Response) {
     const { tenant_id } = (req as any).user;
-    const { id, cod, typeTable } = req.params;
-    const result = await ServicosService.remover(id, tenant_id, cod, typeTable);
+    const { id, cod } = req.params;
+    const result = await ServicosService.remover(id, tenant_id, cod);
     return ManipuladorResposta.sucesso(res, result, 'Serviço removido com sucesso', 204);
   }
 }

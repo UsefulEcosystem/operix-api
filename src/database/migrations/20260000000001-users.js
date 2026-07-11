@@ -2,11 +2,6 @@
 export default {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable("users", {
-      keycloak_id: {
-        type: Sequelize.STRING(255),
-        allowNull: true,
-        unique: true
-      },
       tenant_id: {
         type: Sequelize.INTEGER,
         allowNull: false,

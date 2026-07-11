@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
-import TiposProdutoService from './tipos-produto.service.js';
-import ManipuladorResposta from '../../../core/utils/manipulador-resposta.js';
-import TiposProdutoModel from './tipos-produto.model.js';
+import TiposProdutoService from './tipos-produto.service.ts';
+import ManipuladorResposta from '../../../core/utils/manipulador-resposta.ts';
+import TiposProdutoModel from './tipos-produto.model.ts';
 
 export default class TiposProdutoController {
   static async obterTodos(req: Request, res: Response) {

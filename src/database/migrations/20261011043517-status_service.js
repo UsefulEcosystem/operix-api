@@ -22,11 +22,6 @@ export default {
         allowNull: false,
         type: Sequelize.STRING,
       },
-      cod: {
-        allowNull: false,
-        autoIncrement: true,
-        type: Sequelize.INTEGER,
-      },
       color: {
         allowNull: false,
         type: Sequelize.STRING,

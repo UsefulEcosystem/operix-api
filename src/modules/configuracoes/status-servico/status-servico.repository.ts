@@ -1,5 +1,5 @@
 // @ts-nocheck
-import connection from '../../../core/database/connection.js';
+import connection from '../../../core/database/connection.ts';
 
 class StatusServicoRepository {
   static async obterTodos(tenant_id) {
@@ -10,9 +10,9 @@ class StatusServicoRepository {
   }
 
   static async criar(status_service) {
-    const { tenant_id, description, cod, color } = status_service;
+    const { tenant_id, description, color } = status_service;
     const connect = await connection.connect();
-    const created = await connect.query('INSERT INTO status_service (tenant_id, description, cod, color) VALUES ($1, $2, $3, $4)', [tenant_id, description, cod, color]);
+    const created = await connect.query('INSERT INTO status_service (tenant_id, description, color) VALUES ($1, $2, $3)', [tenant_id, description, color]);
     connect.release();
     return created.rowCount;
   }

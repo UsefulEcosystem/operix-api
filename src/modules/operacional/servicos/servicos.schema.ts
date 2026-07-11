@@ -8,16 +8,14 @@ const serviceSchema = z.object({
   client: z.string().min(1),
   telephone: z.string().min(1),
   adress: z.string().optional(),
-  status: z.union([z.string(), z.number()]).optional(),
-  payment_status: z.number().optional(),
+  status_id: z.union([z.string(), z.number()]).optional(),
+  payment_status_id: z.number().optional(),
   order_of_service: z.number().nullable().optional(),
   observation: z.string().optional(),
-  warehouse_status: z.boolean().optional(),
   created_at: z.string().nullable().optional(),
   updated_at_service: z.string().nullable().optional(),
   updated_at_payment: z.string().nullable().optional(),
   created_at_warehouse: z.string().nullable().optional(),
-  typeTable: z.number().optional(),
 }).openapi('Service');
 
 const serviceCreateSchema = serviceSchema.pick({
@@ -26,16 +24,14 @@ const serviceCreateSchema = serviceSchema.pick({
   telephone: true,
   adress: true,
   observation: true,
-  status: true,
-  typeTable: true,
+  status_id: true,
 }).extend({
   product: z.string().min(1, 'Campo "Produto" é obrigatório.'),
   client: z.string().min(1, 'Campo "Cliente" é obrigatório.'),
   telephone: z.string().min(1, 'Campo "Telefone" é obrigatório.'),
   adress: z.string().optional(),
   observation: z.string().optional(),
-  status: z.union([z.string(), z.number()]).refine((val) => val !== '', { message: 'Campo "Status" é obrigatório.' }),
-  typeTable: z.number().optional().default(1),
+  status_id: z.union([z.string(), z.number()]).refine((val) => val !== '', { message: 'Campo "Situação" é obrigatório.' }),
 }).openapi('ServiceCreate');
 
 const serviceUpdateInfoClientSchema = serviceSchema.pick({
@@ -44,7 +40,6 @@ const serviceUpdateInfoClientSchema = serviceSchema.pick({
   telephone: true,
   adress: true,
   observation: true,
-  typeTable: true,
 }).openapi('ServiceUpdateInfoClient');
 
 const serviceResponseSchema = buildApiResponseSchema(serviceSchema, 'ServiceResponse');

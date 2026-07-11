@@ -1,5 +1,5 @@
-import { buildApiListResponseSchema, buildApiResponseSchema } from '../../../core/schemas/api-response.schema.js';
-import { z } from '../../../core/schemas/zod-openapi.js';
+import { buildApiListResponseSchema, buildApiResponseSchema } from '../../../core/schemas/api-response.schema.ts';
+import { z } from '../../../core/schemas/zod-openapi.ts';
 
 const typeProductSchema = z.object({
   id: z.number().nullable().optional(),

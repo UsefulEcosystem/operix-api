@@ -1,5 +1,5 @@
 // @ts-nocheck
-import StatusServicoRepository from './status-servico.repository.js';
+import StatusServicoRepository from './status-servico.repository.ts';
 
 class StatusServicoService {
   static async obterTodos(tenant_id) { return StatusServicoRepository.obterTodos(tenant_id); }

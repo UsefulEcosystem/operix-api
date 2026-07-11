@@ -34,11 +34,11 @@ export default {
         allowNull: true,
         type: Sequelize.STRING,
       },
-      status: {
+      status_id: {
         allowNull: false,
         type: Sequelize.INTEGER,
       },
-      payment_status: {
+      payment_status_id: {
         allowNull: false,
         type: Sequelize.INTEGER,
       },
@@ -46,21 +46,12 @@ export default {
         allowNull: false,
         type: Sequelize.INTEGER,
       },
-      warehouse_status: {
-        allowNull: true,
-        defaultValue: false,
-        type: Sequelize.BOOLEAN,
-      },
       observation: {
         allowNull: true,
         type: Sequelize.STRING,
       },
       created_at: {
         allowNull: false,
-        type: Sequelize.STRING,
-      },
-      created_at_warehouse: {
-        allowNull: true,
         type: Sequelize.STRING,
       },
       updated_at_service: {

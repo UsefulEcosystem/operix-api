@@ -1,5 +1,5 @@
 // @ts-nocheck
-import connection from '../../../core/database/connection.js';
+import connection from '../../../core/database/connection.ts';
 
 class TiposProdutoRepository {
   static async obterTodos(tenant_id) {
