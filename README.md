@@ -13,7 +13,7 @@ API REST do Operix Service para autenticação, multi-tenancy, RBAC, módulos, p
 ### Passo a Passo
 ```bash
 # 1. Clone o repositório e acesse a pasta
-cd operix-service-api
+cd operix-api
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env
