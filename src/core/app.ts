@@ -5,7 +5,7 @@ import cors from 'cors';
 import { Server, type Server as SocketServer } from 'socket.io';
 import router from './router.js';
 import TratadorErroGlobal from './middlewares/tratador-erro-global.middleware.js';
-import RegistroMiddleware from './middlewares/registro.middleware.js';
+import LogMiddleware from './middlewares/log.middleware.js';
 import ManipuladorResposta from './utils/manipulador-resposta.js';
 import SegurancaMiddleware from './middlewares/seguranca.middleware.js';
 import { env } from './config/env.js';
@@ -39,7 +39,7 @@ app.use(cors({
   allowedHeaders: ['Origin', 'X-Requested-With', 'Authorization', 'Content-Type', 'Accept'],
 }));
 
-app.use(RegistroMiddleware.handle);
+app.use(LogMiddleware.handle);
 app.use(router);
 
 app.use((req: Request, res: Response) => {

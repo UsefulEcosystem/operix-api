@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import AutenticacaoService from './autenticacao.service.js';
 import ManipuladorResposta from '../utils/manipulador-resposta.js';
 import { sanitizarUsuario } from '../utils/sanitizar.js';
-import PermissoesService from '../perfil/permissoes/permissoes.service.js';
+import PermissoesService from '../permissoes/permissoes.service.js';
 import { env } from '../config/env.js';
 
 function getRefreshTokenFromRequest(req: Request) {
@@ -118,6 +118,16 @@ export default class AutenticacaoController {
       return ManipuladorResposta.sucesso(res, sessionResponse(session), 'Login realizado com sucesso.');
     } catch (error: any) {
       return ManipuladorResposta.erro(res, error.message || 'Erro no login.', error.status || 401);
+    }
+  }
+
+  static async loginInterno(req: Request, res: Response) {
+    try {
+      const session = await AutenticacaoService.loginInterno(req.body, getSessionContext(req));
+      setRefreshCookie(res, session.refreshToken);
+      return ManipuladorResposta.sucesso(res, sessionResponse(session), 'Acesso interno realizado com sucesso.');
+    } catch (error: any) {
+      return ManipuladorResposta.erro(res, error.message || 'Erro no acesso interno.', error.status || 401);
     }
   }
 

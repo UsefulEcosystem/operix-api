@@ -1,5 +1,5 @@
-import LocatariosController from '../../src/core/perfil/locatarios/locatarios.controller.js';
-import LocatariosService from '../../src/core/perfil/locatarios/locatarios.service.js';
+import LocatariosController from '../../src/modules/locatarios/locatarios.controller.js';
+import LocatariosService from '../../src/modules/locatarios/locatarios.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
 describe('Testes de Integração - Rotas de Tenants', () => {

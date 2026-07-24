@@ -1,5 +1,5 @@
-import UsuariosController from '../../src/core/perfil/usuarios/usuarios.controller.js';
-import UsuariosService from '../../src/core/perfil/usuarios/usuarios.service.js';
+import UsuariosController from '../../src/modules/usuarios/usuarios.controller.js';
+import UsuariosService from '../../src/modules/usuarios/usuarios.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
 describe('Testes de Integração - Rotas de Usuários', () => {
@@ -30,9 +30,8 @@ describe('Testes de Integração - Rotas de Usuários', () => {
       body: {
         name: 'Maria',
         username: 'maria',
-        email: 'maria@operix.dev',
         password: '12345678',
-        modules: ['inventory'],
+        modules: ['estoque'],
       },
     });
     const res = criarResponseMock();

@@ -1,6 +1,6 @@
-# Operix Service API
+# Opeflow API
 
-API REST do Operix Service para autenticação, multi-tenancy, RBAC, módulos, planos, trial, gestão operacional, estoque, notificações e configurações organizacionais.
+API REST do Opeflow para autenticação, multi-tenancy, RBAC, módulos, planos, trial, gestão operacional, estoque, notificações e configurações organizacionais.
 
 ---
 
@@ -13,7 +13,7 @@ API REST do Operix Service para autenticação, multi-tenancy, RBAC, módulos, p
 ### Passo a Passo
 ```bash
 # 1. Clone o repositório e acesse a pasta
-cd operix-api
+cd opeflow-api
 
 # 2. Configure as variáveis de ambiente
 cp .env.example .env
@@ -68,7 +68,7 @@ O fluxo de autenticação foi reestruturado para ser previsível, seguro e com c
 
 - **Criação do Tenant:** O tenant é provisionado imediatamente com dados temporários (derivados do e-mail). O usuário já possui contexto de tenant desde o primeiro momento.
 - **Onboarding Simplificado:** O onboarding tornou-se uma etapa visual de `UPDATE` com campos opcionais. Se o usuário pular, a conta continua funcional com os dados padrões.
-- **Detecção de Novo Usuário:** A API retorna `is_new_user: true` no retorno do Google ou Registro por e-mail para que o frontend direcione ao onboarding.
+- **Estado Persistido:** A API retorna `onboarding_required` no usuário sanitizado. O frontend usa esse estado em todas as sessões e a conclusão fica registrada em `onboarding_completed_at`.
 
 ---
 
@@ -102,12 +102,12 @@ bun run test:unit
 
 Preparamos configurações específicas para depuração rápida no VS Code em ambos os projetos.
 
-### A) Depurando a API (`operix-service-api`)
+### A) Depurando a API (`opeflow-api`)
 Abra a aba **Run and Debug (Ctrl+Shift+D)** e selecione:
 1. **Debug API (Bun):** Inicializa a API localmente com o Bun no modo de inspeção (`--inspect-brk`), pausando na primeira linha do código.
 2. **Attach API (Bun :6499):** Conecta o depurador do VS Code a um processo Bun já em execução (docker, terminal externo, etc) que exponha a porta `6499`.
 
-### B) Depurando o Frontend (`operix-service-app`)
+### B) Depurando o Frontend (`opeflow-app`)
 1. Inicie o servidor de desenvolvimento no terminal do frontend (`npm run dev`).
 2. No VS Code do frontend, selecione a configuração **Debug App (Chrome)** e clique no Play. Isso permite que você coloque breakpoints diretamente no seu código `.vue` e `.js` no VS Code.
 
@@ -128,24 +128,34 @@ src/
     config/                Ambiente e modo de implantação
     database/              Pool PostgreSQL
     docs/                  OpenAPI agregado
-    registros/             Logs operacionais por tenant
+    logs/                  Logs operacionais por tenant
     middlewares/           Auth, permissões, roles, segurança, erros e validação
-    perfil/
-      permissoes/          Catálogo de módulos, permissões, planos, trial e overrides
-      locatarios/          Tenants, política LOCAL/SAAS, empresa e assinatura
-      usuarios/            Usuários do tenant, RBAC e acesso administrativo
+    permissoes/            Catálogo, planos, policy e overrides de acesso
     schemas/               Schemas de resposta e helpers Zod/OpenAPI
     utils/                 Sanitização, respostas, mensageria e validação
   database/
     migrations/            Evolução do schema PostgreSQL
   modules/
-    inventario/            Estoque
-    notificacoes/          Informações e alertas do sistema
-    operacional/           Serviços, OS, status e tipos de produto
+    perfil/                Perfil pessoal e configurações da empresa
+    locatarios/            Tenants, política LOCAL/SAAS e assinatura
+    usuarios/              Usuários internos e administração de acesso
+    estoque/               Itens e saldos disponíveis
+    vendas/                Vendas avulsas
+    servicos/              Atendimentos e execução
+    pecas-servico/         Peças consumidas em serviços
+    ordens-servico/        Orçamentos e ordens de serviço
+    status-servico/        Catálogo de status de serviço
+    status-pagamento/      Catálogo de status de pagamento
+    tipos-produto/         Catálogo de tipos de produto
+    notificacoes/          Alertas internos do sistema
 tests/
   unit/                    Policies, permissões, onboarding e services
   integration/             Rotas HTTP principais
 ```
+
+Cada módulo de domínio mantém rotas, controller, service, repository, schemas de
+validação HTTP e DTOs de contrato próprios. As decisões da refatoração estão em
+[`docs/arquitetura.md`](docs/arquitetura.md).
 
 ---
 
@@ -154,7 +164,7 @@ tests/
 | Variável | Descrição | Exemplo Padrão |
 |----------|-----------|----------------|
 | `DEPLOYMENT_MODE` | Modo da API (`LOCAL` ou `SAAS`) | `LOCAL` |
-| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql://admin:admin@localhost:5432/operix-service` |
+| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql://admin:admin@localhost:5432/opeflow` |
 | `FRONTEND_URL` | URL de origem do painel frontend | `http://localhost:5173` |
 | `JWT_SECRET` | Segredo de assinatura de Tokens | `change-this-secret-in-production` |
 | `ACCESS_TOKEN_TTL_SECONDS` | Tempo de expiração do Token de Acesso | `900` (15 min) |

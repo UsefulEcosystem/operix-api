@@ -39,7 +39,7 @@ function parseTrustProxy(value: string | undefined) {
 }
 
 export const env = {
-  appName: process.env.APP_NAME || 'operix-service',
+  appName: process.env.APP_NAME || 'opeflow',
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parsePositiveInteger(process.env.PORT, 3333),
   trustProxy: parseTrustProxy(process.env.TRUST_PROXY),
@@ -48,15 +48,15 @@ export const env = {
     ? process.env.DEPLOYMENT_MODE
     : 'LOCAL') as DeploymentMode,
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
-  databaseUrl: process.env.DATABASE_URL || 'postgresql://admin:admin@localhost:5432/operix-service',
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://admin:admin@localhost:5432/opeflow',
   jwtSecret: process.env.JWT_SECRET || defaultJwtSecret,
-  jwtIssuer: process.env.JWT_ISSUER || 'operix-service-api',
-  jwtAudience: process.env.JWT_AUDIENCE || 'operix-service-app',
+  jwtIssuer: process.env.JWT_ISSUER || 'opeflow-api',
+  jwtAudience: process.env.JWT_AUDIENCE || 'opeflow-app',
   accessTokenTtlSeconds: parsePositiveInteger(process.env.ACCESS_TOKEN_TTL_SECONDS, 900),
   refreshTokenTtlDays: parsePositiveInteger(process.env.REFRESH_TOKEN_TTL_DAYS, 30),
-  refreshCookieName: process.env.REFRESH_COOKIE_NAME || 'operix_refresh_token',
+  refreshCookieName: process.env.REFRESH_COOKIE_NAME || 'opeflow_refresh_token',
   emailDeliveryWebhookUrl: process.env.EMAIL_DELIVERY_WEBHOOK_URL || '',
-  emailFrom: process.env.EMAIL_FROM || 'no-reply@operix.local',
+  emailFrom: process.env.EMAIL_FROM || 'no-reply@opeflow.local',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
   googleAuthUrl: process.env.GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth',

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import ManipuladorResposta from '../utils/manipulador-resposta.js';
-import PermissoesService from '../perfil/permissoes/permissoes.service.js';
+import PermissoesService from '../permissoes/permissoes.service.js';
 
 export default class PermissoesMiddleware {
   static exigirPermissao(permissionKey: string): RequestHandler {

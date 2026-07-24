@@ -7,6 +7,7 @@ import {
   authConfigResponseSchema,
   authForgotPasswordSchema,
   authGenericResponseSchema,
+  authInternalLoginSchema,
   authLoginResponseSchema,
   authLoginSchema,
   authMeResponseSchema,
@@ -16,7 +17,6 @@ import {
   authRegisterResponseSchema,
   authRegisterSchema,
   authResetPasswordSchema,
-  authVerifyEmailSchema,
   onboardingSchema,
 } from '../autenticacao.schema.js';
 
@@ -26,9 +26,9 @@ export function registerAuthDocs(registry: OpenAPIRegistry) {
   registry.register('AuthAuthorize', authAuthorizeSchema);
   registry.register('AuthCallback', authCallbackSchema);
   registry.register('AuthLogin', authLoginSchema);
+  registry.register('AuthInternalLogin', authInternalLoginSchema);
   registry.register('AuthRefresh', authRefreshSchema);
   registry.register('AuthRegister', authRegisterSchema);
-  registry.register('AuthVerifyEmail', authVerifyEmailSchema);
   registry.register('AuthForgotPassword', authForgotPasswordSchema);
   registry.register('AuthResetPassword', authResetPasswordSchema);
   registry.register('Onboarding', onboardingSchema);
@@ -86,26 +86,26 @@ export function registerAuthDocs(registry: OpenAPIRegistry) {
 
   registry.registerPath({
     method: 'post',
-    path: '/autenticacao/registrar',
+    path: '/autenticacao/login-interno',
     tags: ['Autenticação'],
-    request: { body: { content: { 'application/json': { schema: authRegisterSchema } }, required: true } },
+    request: { body: { content: { 'application/json': { schema: authInternalLoginSchema } }, required: true } },
     responses: {
-      201: {
-        description: 'Cadastro iniciado com verificação de e-mail',
-        content: { 'application/json': { schema: authRegisterResponseSchema } },
+      200: {
+        description: 'Usuário interno autenticado no contexto da empresa',
+        content: { 'application/json': { schema: authLoginResponseSchema } },
       },
     },
   });
 
   registry.registerPath({
     method: 'post',
-    path: '/autenticacao/verificar-email',
+    path: '/autenticacao/registrar',
     tags: ['Autenticação'],
-    request: { body: { content: { 'application/json': { schema: authVerifyEmailSchema } }, required: true } },
+    request: { body: { content: { 'application/json': { schema: authRegisterSchema } }, required: true } },
     responses: {
-      200: {
-        description: 'E-mail verificado e sessão iniciada',
-        content: { 'application/json': { schema: authLoginResponseSchema } },
+      201: {
+        description: 'Cadastro concluído e sessão iniciada',
+        content: { 'application/json': { schema: authRegisterResponseSchema } },
       },
     },
   });
@@ -181,7 +181,7 @@ export function registerAuthDocs(registry: OpenAPIRegistry) {
     security,
     request: { body: { content: { 'application/json': { schema: onboardingSchema } }, required: true } },
     responses: {
-      201: {
+      200: {
         description: 'Onboarding concluído com sucesso',
         content: { 'application/json': { schema: authOnboardingResponseSchema } },
       },

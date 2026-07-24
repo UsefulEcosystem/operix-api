@@ -8,6 +8,7 @@ import {
   authAuthorizeSchema,
   authCallbackSchema,
   authForgotPasswordSchema,
+  authInternalLoginSchema,
   authLoginSchema,
   authRegisterSchema,
   authResetPasswordSchema,
@@ -50,6 +51,14 @@ router.post(
   SegurancaMiddleware.exigirOrigemConfiavel,
   ValidacaoMiddleware.validarSchema(authLoginSchema),
   AutenticacaoController.login,
+);
+
+router.post(
+  '/login-interno',
+  RateLimitMiddleware.authEstrito,
+  SegurancaMiddleware.exigirOrigemConfiavel,
+  ValidacaoMiddleware.validarSchema(authInternalLoginSchema),
+  AutenticacaoController.loginInterno,
 );
 
 router.post(

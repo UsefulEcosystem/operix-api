@@ -1,7 +1,7 @@
 import AutenticacaoService from '../../src/core/autenticacao/autenticacao.service.js';
-import LocatarioRepository from '../../src/core/perfil/locatarios/locatarios.repository.js';
-import UsuariosRepository from '../../src/core/perfil/usuarios/usuarios.repository.js';
-import PoliticaLocatarioService from '../../src/core/perfil/locatarios/politica-locatario.service.js';
+import LocatarioRepository from '../../src/modules/locatarios/locatarios.repository.js';
+import UsuariosRepository from '../../src/modules/usuarios/usuarios.repository.js';
+import PoliticaLocatarioService from '../../src/modules/locatarios/politica-locatario.service.js';
 import { sanitizarUsuario } from '../../src/core/utils/sanitizar.js';
 
 describe('AutenticacaoService', () => {
@@ -34,7 +34,7 @@ describe('AutenticacaoService', () => {
       id: 22,
       name: 'admin',
       username: 'user_123',
-      email: 'admin@operix.dev',
+      email: 'admin@opeflow.dev',
       tenant_id: 11,
       admin: true,
       root: true,
@@ -46,18 +46,18 @@ describe('AutenticacaoService', () => {
       expires_in: 300,
       refresh_expires_in: 1800,
       token_type: 'Bearer',
-      user: { id: 22, email: 'admin@operix.dev' },
+      user: { id: 22, email: 'admin@opeflow.dev' },
     } as any);
 
     const result = await AutenticacaoService.registrar({
-      email: 'admin@operix.dev',
+      email: 'admin@opeflow.dev',
       password: 'secret123',
       confirm_password: 'secret123',
     });
 
     expect(UsuariosRepository.criar).toHaveBeenCalledWith(expect.objectContaining({
       tenant_id: 11,
-      email: 'admin@operix.dev',
+      email: 'admin@opeflow.dev',
       admin: true,
       root: true,
     }));

@@ -1,8 +1,8 @@
-import ConfiguracoesPerfilController from '../../src/core/perfil/configuracoes-perfil.controller.js';
-import PermissoesService from '../../src/core/perfil/permissoes/permissoes.service.js';
-import LocatarioRepository from '../../src/core/perfil/locatarios/locatarios.repository.js';
-import LocatariosService from '../../src/core/perfil/locatarios/locatarios.service.js';
-import UsuariosService from '../../src/core/perfil/usuarios/usuarios.service.js';
+import ConfiguracoesPerfilController from '../../src/modules/perfil/configuracoes-perfil.controller.js';
+import PermissoesService from '../../src/core/permissoes/permissoes.service.js';
+import LocatarioRepository from '../../src/modules/locatarios/locatarios.repository.js';
+import LocatariosService from '../../src/modules/locatarios/locatarios.service.js';
+import UsuariosService from '../../src/modules/usuarios/usuarios.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
 describe('Testes de Integração - Rotas de Perfil', () => {
@@ -36,7 +36,7 @@ describe('Testes de Integração - Rotas de Perfil', () => {
   });
 
   test('obterEmpresa retorna empresa do tenant', async () => {
-    jest.spyOn(LocatarioRepository, 'findById').mockResolvedValue({ id: 3, name: 'Operix' } as any);
+    jest.spyOn(LocatarioRepository, 'findById').mockResolvedValue({ id: 3, name: 'Opeflow' } as any);
     const req = criarRequestMock({ user: { tenant_id: 3 } });
     const res = criarResponseMock();
 
@@ -44,27 +44,27 @@ describe('Testes de Integração - Rotas de Perfil', () => {
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       msg: 'Empresa carregada com sucesso',
-      data: { id: 3, name: 'Operix' },
+      data: { id: 3, name: 'Opeflow' },
     }));
   });
 
   test('atualizarEmpresa atualiza empresa atual', async () => {
-    jest.spyOn(LocatariosService, 'atualizar').mockResolvedValue({ id: 3, name: 'Operix Updated' } as any);
-    const req = criarRequestMock({ user: { tenant_id: 3 }, body: { name: 'Operix Updated' } });
+    jest.spyOn(LocatariosService, 'atualizar').mockResolvedValue({ id: 3, name: 'Opeflow Updated' } as any);
+    const req = criarRequestMock({ user: { tenant_id: 3 }, body: { name: 'Opeflow Updated' } });
     const res = criarResponseMock();
 
     await ConfiguracoesPerfilController.atualizarEmpresa(req, res);
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       msg: 'Empresa atualizada com sucesso',
-      data: { id: 3, name: 'Operix Updated' },
+      data: { id: 3, name: 'Opeflow Updated' },
     }));
   });
 
   test('obterSistema retorna catálogo e permissões efetivas', async () => {
     jest.spyOn(PermissoesService, 'obterPermissoesUsuarioAtual').mockResolvedValue({
       access: { plan: 'trial' },
-      effective_permissions: ['organization.settings.access'],
+      effective_permissions: ['configuracoes.acesso'],
       permissions: [],
     } as any);
     jest.spyOn(PermissoesService, 'obterCatalogo').mockReturnValue({ modules: [], permissions: [], plans: [] } as any);
@@ -76,7 +76,7 @@ describe('Testes de Integração - Rotas de Perfil', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       msg: 'Configurações do sistema carregadas com sucesso',
       data: expect.objectContaining({
-        effective_permissions: ['organization.settings.access'],
+        effective_permissions: ['configuracoes.acesso'],
         catalog: { modules: [], permissions: [], plans: [] },
       }),
     }));

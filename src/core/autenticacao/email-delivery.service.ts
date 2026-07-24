@@ -9,9 +9,9 @@ type SendAuthEmailInput = {
 };
 
 const emailSubjects: Record<AuthEmailPurpose, string> = {
-  email_verification: 'Confirme seu e-mail no Operix',
-  password_setup: 'Crie sua senha no Operix',
-  password_reset: 'Redefina sua senha no Operix',
+  email_verification: 'Confirme seu e-mail no Opeflow',
+  password_setup: 'Crie sua senha no Opeflow',
+  password_reset: 'Redefina sua senha no Opeflow',
 };
 
 export default class EmailDeliveryService {

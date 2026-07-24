@@ -1,5 +1,5 @@
-import EstoqueController from '../../src/modules/inventario/estoque/estoque.controller.js';
-import EstoqueService from '../../src/modules/inventario/estoque/estoque.service.js';
+import EstoqueController from '../../src/modules/estoque/estoque.controller.js';
+import EstoqueService from '../../src/modules/estoque/estoque.service.js';
 import MensageriaService from '../../src/core/utils/mensageria.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 

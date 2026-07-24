@@ -1,5 +1,5 @@
-import OrdemServicoController from '../../src/modules/operacional/ordem-servico/ordem-servico.controller.js';
-import OrdemServicoService from '../../src/modules/operacional/ordem-servico/ordem-servico.service.js';
+import OrdemServicoController from '../../src/modules/ordens-servico/ordem-servico.controller.js';
+import OrdemServicoService from '../../src/modules/ordens-servico/ordem-servico.service.js';
 import Utilitarios from '../../src/core/utils/utilitarios.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { buildApiResponseSchema } from '../schemas/api-response.schema.js';
-import { sanitizedUserSchema } from '../perfil/usuarios/usuarios.schema.js';
+import { sanitizedUserSchema } from '../../modules/usuarios/usuarios.schema.js';
 
 extendZodWithOpenApi(z);
 
@@ -10,6 +10,14 @@ const authLoginSchema = z.object({
   password: z.string().min(1, 'Campo "Senha" é obrigatório.'),
   remember: z.boolean().optional(),
 }).openapi('AuthLogin');
+
+const authInternalLoginSchema = z.object({
+  company_code: z.string()
+    .trim()
+    .regex(/^OPE-[A-Z2-9]{4}-[A-Z2-9]{4}$/i, 'Código da empresa inválido.'),
+  username: z.string().trim().min(1, 'Campo "Usuário" é obrigatório.'),
+  password: z.string().min(1, 'Campo "Senha" é obrigatório.'),
+}).openapi('AuthInternalLogin');
 
 const authRefreshSchema = z.object({
   refresh_token: z.string().min(1).optional(),
@@ -41,19 +49,6 @@ const authRegisterSchema = z.object({
   path: ['confirm_password'],
 }).openapi('AuthRegister');
 
-const authSetupPasswordSchema = z.object({
-  token: z.string().min(32, 'Token de verificação inválido.'),
-  password: z.string().min(8, 'Campo "Senha" deve ter no mínimo 8 caracteres.'),
-  confirm_password: z.string().min(8, 'Campo "Confirmar senha" deve ter no mínimo 8 caracteres.'),
-}).refine((data) => data.password === data.confirm_password, {
-  message: 'As senhas informadas não conferem.',
-  path: ['confirm_password'],
-}).openapi('AuthSetupPassword');
-
-const authVerifyEmailSchema = z.object({
-  token: z.string().min(32, 'Token de verificação inválido.'),
-}).openapi('AuthVerifyEmail');
-
 const authForgotPasswordSchema = z.object({
   email: z.string().email('Campo "E-mail" inválido.'),
 }).openapi('AuthForgotPassword');
@@ -69,7 +64,6 @@ const authResetPasswordSchema = z.object({
 
 const onboardingSchema = z.object({
   company_name: z.string().min(1).optional(),
-  tenant: z.string().min(1).optional(),
   name: z.string().min(1).optional(),
   username: z.string().min(1).optional(),
   cnpj: z.string().max(20).optional().nullable(),
@@ -130,6 +124,7 @@ const authGenericResponseSchema = buildApiResponseSchema(z.object({
 
 export {
   authAuthorizeResponseSchema,
+  authInternalLoginSchema,
   authLoginSchema,
   authCallbackResponseSchema,
   authRefreshSchema,
@@ -137,8 +132,6 @@ export {
   authCheckEmailResponseSchema,
   authRegisterSchema,
   authRegisterResponseSchema,
-  authSetupPasswordSchema,
-  authVerifyEmailSchema,
   authForgotPasswordSchema,
   authResetPasswordSchema,
   authGenericResponseSchema,

@@ -1,9 +1,9 @@
-import StatusPagamentoController from '../../src/modules/operacional/status-pagamento/status-pagamento.controller.js';
-import StatusPagamentoService from '../../src/modules/operacional/status-pagamento/status-pagamento.service.js';
-import StatusServicoController from '../../src/modules/operacional/status-servico/status-servico.controller.js';
-import StatusServicoService from '../../src/modules/operacional/status-servico/status-servico.service.js';
-import TiposProdutoController from '../../src/modules/operacional/tipos-produto/tipos-produto.controller.js';
-import TiposProdutoService from '../../src/modules/operacional/tipos-produto/tipos-produto.service.js';
+import StatusPagamentoController from '../../src/modules/status-pagamento/status-pagamento.controller.js';
+import StatusPagamentoService from '../../src/modules/status-pagamento/status-pagamento.service.js';
+import StatusServicoController from '../../src/modules/status-servico/status-servico.controller.js';
+import StatusServicoService from '../../src/modules/status-servico/status-servico.service.js';
+import TiposProdutoController from '../../src/modules/tipos-produto/tipos-produto.controller.js';
+import TiposProdutoService from '../../src/modules/tipos-produto/tipos-produto.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
 describe('Testes de Integração - Rotas de Parâmetros (Status e Tipos)', () => {

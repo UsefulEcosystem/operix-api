@@ -1,5 +1,5 @@
-import ServicosController from '../../src/modules/operacional/servicos/servicos.controller.js';
-import ServicosService from '../../src/modules/operacional/servicos/servicos.service.js';
+import ServicosController from '../../src/modules/servicos/servicos.controller.js';
+import ServicosService from '../../src/modules/servicos/servicos.service.js';
 import MensageriaService from '../../src/core/utils/mensageria.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
@@ -16,16 +16,6 @@ describe('Testes de Integração - Rotas de Serviços (Services)', () => {
     await ServicosController.obterTodos(req, res);
 
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Serviços listados com sucesso' }));
-  });
-
-  test('obterTodosAlmoxarifado lista almoxerifado', async () => {
-    jest.spyOn(ServicosService, 'obterTodosAlmoxarifado').mockResolvedValue([{ id: 1, quantity: 10 } as any]);
-    const req = criarRequestMock({ user: { tenant_id: 1 } });
-    const res = criarResponseMock();
-
-    await ServicosController.obterTodosAlmoxarifado(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ msg: 'Serviços do almoxerifado listados com sucesso' }));
   });
 
   test('create cria serviço e notifica tenant', async () => {

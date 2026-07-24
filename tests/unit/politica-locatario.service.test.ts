@@ -1,5 +1,5 @@
-import PoliticaLocatarioService from '../../src/core/perfil/locatarios/politica-locatario.service.js';
-import LocatarioRepository from '../../src/core/perfil/locatarios/locatarios.repository.js';
+import PoliticaLocatarioService from '../../src/modules/locatarios/politica-locatario.service.js';
+import LocatarioRepository from '../../src/modules/locatarios/locatarios.repository.js';
 import { env } from '../../src/core/config/env.js';
 
 describe('PoliticaLocatarioService', () => {

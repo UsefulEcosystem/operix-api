@@ -2,18 +2,20 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import argon2 from 'argon2';
 import ErroValidacao from '../utils/erro-validacao.js';
-import LocatarioModel from '../perfil/locatarios/locatarios.model.js';
-import LocatariosRepository from '../perfil/locatarios/locatarios.repository.js';
-import UsuariosRepository from '../perfil/usuarios/usuarios.repository.js';
-import UsuarioModel from '../perfil/usuarios/usuarios.model.js';
+import LocatarioModel from '../../modules/locatarios/locatarios.model.js';
+import LocatariosRepository from '../../modules/locatarios/locatarios.repository.js';
+import UsuariosRepository from '../../modules/usuarios/usuarios.repository.js';
+import UsuarioModel from '../../modules/usuarios/usuarios.model.js';
 import { sanitizarUsuario } from '../utils/sanitizar.js';
-import PoliticaLocatarioService from '../perfil/locatarios/politica-locatario.service.js';
-import PermissoesService from '../perfil/permissoes/permissoes.service.js';
+import PoliticaLocatarioService from '../../modules/locatarios/politica-locatario.service.js';
+import PermissoesService from '../permissoes/permissoes.service.js';
 import { env } from '../config/env.js';
 import RefreshTokenRepository from './refresh-token.repository.js';
 import AccessTokenBlacklistRepository from './access-token-blacklist.repository.js';
 import AuthActionTokenRepository from './auth-action-token.repository.js';
 import EmailDeliveryService from './email-delivery.service.js';
+import type { OnboardingInputDto } from './onboarding.dto.js';
+import type { InternalLoginInputDto } from './internal-login.dto.js';
 
 type SessionContext = {
   ip?: string | null;
@@ -23,7 +25,7 @@ type SessionContext = {
 type JwtPayload = {
   sub: string;
   tenant_id: number | null;
-  email: string;
+  email: string | null;
   username: string;
   roles: string[];
   admin: boolean;
@@ -234,6 +236,23 @@ export default class AutenticacaoService {
     return this.criarSessao(user, context);
   }
 
+  static async loginInterno(data: InternalLoginInputDto, context: SessionContext = {}) {
+    const companyCode = data.company_code.trim().toUpperCase();
+    const username = data.username.trim();
+    const user = await UsuariosRepository.findByInternalLogin(companyCode, username);
+
+    if (!user || user.active === false || !user.password || user.root) {
+      throw new ErroValidacao('Código da empresa, usuário ou senha inválidos.', 401);
+    }
+
+    const validPassword = await argon2.verify(user.password, data.password);
+    if (!validPassword) {
+      throw new ErroValidacao('Código da empresa, usuário ou senha inválidos.', 401);
+    }
+
+    return this.criarSessao(user, context);
+  }
+
   static async registrar(
     data: { email: string; password: string; confirm_password: string },
     context: SessionContext = {},
@@ -382,7 +401,7 @@ export default class AutenticacaoService {
     }
   }
 
-  static async concluirOnboarding(authenticatedUser: any, data: any) {
+  static async concluirOnboarding(authenticatedUser: any, data: OnboardingInputDto) {
     if (!authenticatedUser?.id) {
       throw new ErroValidacao('Usuário autenticado não identificado.', 401);
     }
@@ -393,33 +412,26 @@ export default class AutenticacaoService {
     }
 
     // Atualiza tenant somente com os campos fornecidos
-    const tenantName = (data.company_name || data.tenant || '').trim();
+    const tenantName = (data.company_name || '').trim();
     if (tenantName || data.cnpj !== undefined || data.description !== undefined) {
       await LocatariosRepository.atualizar(tenantId, {
-        name: tenantName || undefined,
-        cnpj: data.cnpj ?? undefined,
-        description: data.description ?? undefined,
+        ...(tenantName ? { name: tenantName } : {}),
+        ...(data.cnpj !== undefined ? { cnpj: data.cnpj } : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
       });
     }
 
-    // Atualiza usuário somente com os campos fornecidos
-    let updatedUser: any;
-    if (data.name || data.username) {
-      if (data.username) {
-        const existingUsername = await UsuariosRepository.findByUsername(data.username);
-        if (existingUsername && existingUsername.id !== authenticatedUser.id) {
-          throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
-        }
+    if (data.username) {
+      const existingUsername = await UsuariosRepository.findByUsernameInTenant(data.username, tenantId);
+      if (existingUsername && existingUsername.id !== authenticatedUser.id) {
+        throw new ErroValidacao('Nome de usuário já cadastrado.', 409);
       }
-
-      updatedUser = await UsuariosRepository.atualizarOnboarding(authenticatedUser.id, {
-        name: data.name || undefined,
-        username: data.username || undefined,
-      });
-    } else {
-      updatedUser = await UsuariosRepository.findById(authenticatedUser.id);
     }
 
+    const updatedUser = await UsuariosRepository.concluirOnboarding(authenticatedUser.id, {
+      ...(data.name ? { name: data.name } : {}),
+      ...(data.username ? { username: data.username } : {}),
+    });
     return sanitizarUsuario(updatedUser);
   }
 

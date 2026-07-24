@@ -1,1 +1,0 @@
-export { default as configuracoesRouter } from './configuracoes.routes.ts'

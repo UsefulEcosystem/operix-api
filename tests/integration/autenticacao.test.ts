@@ -1,6 +1,6 @@
 import AutenticacaoController from '../../src/core/autenticacao/autenticacao.controller.js';
 import AutenticacaoService from '../../src/core/autenticacao/autenticacao.service.js';
-import PermissoesService from '../../src/core/perfil/permissoes/permissoes.service.js';
+import PermissoesService from '../../src/core/permissoes/permissoes.service.js';
 import { criarRequestMock, criarResponseMock } from '../support/mocks-express.js';
 
 describe('Testes de Integração - Rotas de Autenticação', () => {
@@ -35,7 +35,7 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
 
   test('me retorna snapshot da sessão autenticada', async () => {
     jest.spyOn(PermissoesService, 'obterPermissoesUsuarioAtual').mockResolvedValue({
-      effective_permissions: ['organization.users.access'],
+      effective_permissions: ['usuarios.acesso'],
       access: { plan: 'trial' },
     } as any);
     const req = criarRequestMock({ user: { id: 1, username: 'admin', tenant_id: 1 } });
@@ -46,7 +46,7 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       msg: 'Sessão carregada.',
       data: expect.objectContaining({
-        permissions: ['organization.users.access'],
+        permissions: ['usuarios.acesso'],
       }),
     }));
   });
@@ -62,9 +62,9 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
         id: 5,
         sub: '5',
         username: 'user',
-        email: 'user@operix.dev',
+        email: 'user@opeflow.dev',
         tenant_id: 1,
-        roles: ['module:organization'],
+        roles: ['modulo:organizacao'],
       },
     } as any);
 
@@ -79,7 +79,7 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
 
     await AutenticacaoController.callback(req, res);
 
-    expect(res.cookie).toHaveBeenCalledWith('operix_refresh_token', 'refresh-token', expect.objectContaining({
+    expect(res.cookie).toHaveBeenCalledWith('opeflow_refresh_token', 'refresh-token', expect.objectContaining({
       httpOnly: true,
       sameSite: 'lax',
       path: '/api/autenticacao',
@@ -108,9 +108,9 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
         id: 8,
         sub: '8',
         username: 'refresh.user',
-        email: 'refresh@operix.dev',
+        email: 'refresh@opeflow.dev',
         tenant_id: 3,
-        roles: ['module:inventory'],
+        roles: ['modulo:estoque'],
       },
     } as any);
 
@@ -122,7 +122,7 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
     expect(AutenticacaoService.renovarToken).toHaveBeenCalledWith('refresh-token', expect.objectContaining({
       ip: '127.0.0.1',
     }));
-    expect(res.cookie).toHaveBeenCalledWith('operix_refresh_token', 'new-refresh-token', expect.any(Object));
+    expect(res.cookie).toHaveBeenCalledWith('opeflow_refresh_token', 'new-refresh-token', expect.any(Object));
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       msg: 'Refresh token realizado com sucesso!',
       data: expect.objectContaining({
@@ -142,12 +142,12 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
       expires_in: 300,
       refresh_expires_in: 1800,
       token_type: 'Bearer',
-      user: { id: 5, sub: '5', email: 'admin@operix.dev' },
+      user: { id: 5, sub: '5', email: 'admin@opeflow.dev' },
       is_new_user: true
     } as any);
 
     const payload = {
-      email: 'admin@operix.dev',
+      email: 'admin@opeflow.dev',
       password: 'secret123',
       confirm_password: 'secret123',
     };
@@ -168,14 +168,56 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
     }));
   });
 
+  test('login interno cria sessão usando código da empresa e usuário', async () => {
+    jest.spyOn(AutenticacaoService, 'loginInterno').mockResolvedValue({
+      token: 'internal-access-token',
+      refreshToken: 'internal-refresh-token',
+      expires_in: 300,
+      refresh_expires_in: 1800,
+      token_type: 'Bearer',
+      user: {
+        id: 9,
+        sub: '9',
+        username: 'maria',
+        email: null,
+        tenant_id: 3,
+        roles: ['modulo:estoque'],
+      },
+    } as any);
+    const payload = {
+      company_code: 'OPE-ABCD-2345',
+      username: 'maria',
+      password: 'secret123',
+    };
+    const req = criarRequestMock({ body: payload });
+    const res = criarResponseMock();
+
+    await AutenticacaoController.loginInterno(req, res);
+
+    expect(AutenticacaoService.loginInterno).toHaveBeenCalledWith(payload, expect.any(Object));
+    expect(res.cookie).toHaveBeenCalledWith(
+      'opeflow_refresh_token',
+      'internal-refresh-token',
+      expect.objectContaining({ httpOnly: true }),
+    );
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      msg: 'Acesso interno realizado com sucesso.',
+      data: expect.objectContaining({
+        token: 'internal-access-token',
+        user: expect.objectContaining({ username: 'maria', tenant_id: 3 }),
+      }),
+    }));
+  });
+
   test('concluirOnboarding delega dados autenticados ao serviço', async () => {
     jest.spyOn(AutenticacaoService, 'concluirOnboarding').mockResolvedValue({ id: 1, tenant_id: 10, admin: true } as any);
     const payload = {
-      company_name: 'Operix',
+      company_name: 'Opeflow',
       name: 'Admin',
       username: 'admin',
     };
-    const user = { id: 1, email: 'admin@operix.dev', tenant_id: null };
+    const user = { id: 1, email: 'admin@opeflow.dev', tenant_id: null };
     const req = criarRequestMock({ body: payload, user });
     const res = criarResponseMock();
 
@@ -191,12 +233,12 @@ describe('Testes de Integração - Rotas de Autenticação', () => {
       active: true,
     });
 
-    const req = criarRequestMock({ body: { email: 'admin@operix.dev' } });
+    const req = criarRequestMock({ body: { email: 'admin@opeflow.dev' } });
     const res = criarResponseMock();
 
     await AutenticacaoController.checkEmail(req, res);
 
-    expect(AutenticacaoService.verificarExistenciaEmail).toHaveBeenCalledWith('admin@operix.dev');
+    expect(AutenticacaoService.verificarExistenciaEmail).toHaveBeenCalledWith('admin@opeflow.dev');
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
       success: true,

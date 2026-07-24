@@ -8,7 +8,7 @@ type UserLike = {
   tenant_id?: number | null;
   admin?: boolean | null;
   root?: boolean | null;
-  onboarding_required?: boolean | null;
+  onboarding_completed_at?: string | Date | null;
   roles?: string[] | null;
   avatar_url?: string | null;
   role_title?: string | null;
@@ -33,7 +33,7 @@ export function sanitizarUsuario(user: UserLike | null | undefined) {
     tenant_id: user.tenant_id ?? null,
     admin: Boolean(user.admin),
     root: Boolean(user.root),
-    onboarding_required: Boolean(user.onboarding_required),
+    onboarding_required: !user.onboarding_completed_at,
     roles: user.roles || [],
     avatar_url: user.avatar_url ?? null,
     role_title: user.role_title ?? null,

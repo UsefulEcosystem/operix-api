@@ -1,6 +1,6 @@
-import PermissoesService from '../../src/core/perfil/permissoes/permissoes.service.js';
+import PermissoesService from '../../src/core/permissoes/permissoes.service.js';
 import { env } from '../../src/core/config/env.js';
-import { buildPlanContext } from '../../src/core/perfil/permissoes/planos.catalog.js';
+import { buildPlanContext } from '../../src/core/permissoes/planos.catalog.js';
 
 describe('PermissoesService', () => {
   const originalMode = env.deploymentMode;
@@ -11,51 +11,51 @@ describe('PermissoesService', () => {
 
   test('resolve permissões a partir das roles', () => {
     const snapshot = PermissoesService.construirSnapshotPermissao({
-      roles: ['module:inventory'],
+      roles: ['modulo:estoque'],
       overrides: [],
     });
 
-    expect(snapshot.effective_permissions).toContain('dashboard.access');
-    expect(snapshot.effective_permissions).toContain('inventory.stock.access');
+    expect(snapshot.effective_permissions).toContain('painel.acesso');
+    expect(snapshot.effective_permissions).toContain('estoque.acesso');
   });
 
   test('allow explícito libera permissão sem role base', () => {
     const snapshot = PermissoesService.construirSnapshotPermissao({
       roles: [],
-      overrides: [{ permission_key: 'organization.users.access', effect: 'allow' }],
+      overrides: [{ permission_key: 'usuarios.acesso', effect: 'allow' }],
     });
 
-    expect(snapshot.effective_permissions).toContain('organization.users.access');
+    expect(snapshot.effective_permissions).toContain('usuarios.acesso');
   });
 
   test('deny explícito bloqueia permissão mesmo com role base', () => {
     const snapshot = PermissoesService.construirSnapshotPermissao({
-      roles: ['module:inventory'],
-      overrides: [{ permission_key: 'inventory.stock.access', effect: 'deny' }],
+      roles: ['modulo:estoque'],
+      overrides: [{ permission_key: 'estoque.acesso', effect: 'deny' }],
     });
 
-    expect(snapshot.effective_permissions).not.toContain('inventory.stock.access');
+    expect(snapshot.effective_permissions).not.toContain('estoque.acesso');
   });
 
   test('catálogo contém módulos gerenciáveis', () => {
     const catalog = PermissoesService.obterCatalogo();
-    expect(catalog.modules.some((module) => module.key === 'operational')).toBe(true);
-    expect(catalog.permissions.some((permission) => permission.key === 'dashboard.access')).toBe(true);
+    expect(catalog.modules.some((module) => module.key === 'servicos')).toBe(true);
+    expect(catalog.permissions.some((permission) => permission.key === 'painel.acesso')).toBe(true);
   });
 
-  test('modo LOCAL libera todas as permissões via policy central', () => {
+  test('modo LOCAL respeita permissões distintas de usuários internos', () => {
     env.deploymentMode = 'LOCAL';
     const access = buildPlanContext({ plan_key: 'free' });
     const snapshot = PermissoesService.construirSnapshotPermissao({
       roles: [],
-      overrides: [],
-      fullAccess: true,
+      overrides: [{ permission_key: 'estoque.acesso', effect: 'allow' }],
+      fullAccess: false,
       planPermissaoKeys: access.permission_keys,
       planContext: access,
     });
 
-    expect(snapshot.effective_permissions).toContain('inventory.stock.access');
-    expect(snapshot.effective_permissions).toContain('organization.settings.access');
+    expect(snapshot.effective_permissions).toContain('estoque.acesso');
+    expect(snapshot.effective_permissions).not.toContain('configuracoes.acesso');
     expect(snapshot.access.full_access).toBe(true);
   });
 
@@ -70,9 +70,9 @@ describe('PermissoesService', () => {
       planContext: access,
     });
 
-    expect(snapshot.effective_permissions).toContain('operational.services.access');
-    expect(snapshot.effective_permissions).toContain('organization.users.access');
-    expect(snapshot.effective_permissions).toContain('inventory.stock.access');
+    expect(snapshot.effective_permissions).toContain('servicos.acesso');
+    expect(snapshot.effective_permissions).toContain('usuarios.acesso');
+    expect(snapshot.effective_permissions).toContain('estoque.acesso');
   });
 
   test('trial SaaS mantém acesso completo por 30 dias', () => {
@@ -84,7 +84,7 @@ describe('PermissoesService', () => {
     });
 
     expect(access.trial.active).toBe(true);
-    expect(access.permission_keys).toContain('inventory.stock.access');
+    expect(access.permission_keys).toContain('estoque.acesso');
   });
 
   test('trial vencido cai para permissões do plano configurado', () => {
@@ -95,13 +95,13 @@ describe('PermissoesService', () => {
       trial_ends_at: new Date(Date.now() - 86_400_000).toISOString(),
     });
     const snapshot = PermissoesService.construirSnapshotPermissao({
-      roles: ['module:inventory'],
+      roles: ['modulo:estoque'],
       overrides: [],
       planPermissaoKeys: access.permission_keys,
       planContext: access,
     });
 
     expect(access.trial.active).toBe(false);
-    expect(snapshot.effective_permissions).not.toContain('inventory.stock.access');
+    expect(snapshot.effective_permissions).not.toContain('estoque.acesso');
   });
 });

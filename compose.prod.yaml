@@ -15,7 +15,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - operix-network
+      - opeflow-network
 
   postgres:
     image: postgres:14-alpine
@@ -34,11 +34,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - operix-network
+      - opeflow-network
 
 volumes:
   postgres-data:
 
 networks:
-  operix-network:
+  opeflow-network:
     driver: bridge
