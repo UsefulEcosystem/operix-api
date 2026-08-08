@@ -3,6 +3,14 @@ import { servicePartCreateSchema, servicePartResponseSchema } from './pecas-serv
 
 export function registerPecasServicoDocs(registry: OpenAPIRegistry) {
   registry.registerPath({
+    method: 'get',
+    path: '/servicos/{serviceId}/pecas',
+    tags: ['Peças de Serviço'],
+    security: [{ bearerAuth: [] }],
+    responses: { 200: { description: 'Peças listadas' } },
+  });
+
+  registry.registerPath({
     method: 'post',
     path: '/servicos/{serviceId}/pecas',
     tags: ['Peças de Serviço'],

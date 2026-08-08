@@ -12,7 +12,7 @@ class OrdemServicoRepository {
   static async obterUnico(cod, tenant_id) {
     const connect = await connection.connect();
     const result = await connect.query(
-      'SELECT cod_order, estimate, value, created_at FROM order_of_service WHERE cod_order = $1 AND tenant_id = $2',
+      'SELECT cod_order, estimate, value, warranty_days, created_at FROM order_of_service WHERE cod_order = $1 AND tenant_id = $2',
       [cod, tenant_id],
     );
     connect.release();
@@ -22,7 +22,7 @@ class OrdemServicoRepository {
   static async obterTodos(tenant_id) {
     const connect = await connection.connect();
     const result = await connect.query(
-      'SELECT cod_order, estimate, value, created_at FROM order_of_service WHERE tenant_id = $1 ORDER BY cod_order DESC',
+      'SELECT cod_order, estimate, value, warranty_days, created_at FROM order_of_service WHERE tenant_id = $1 ORDER BY cod_order DESC',
       [tenant_id],
     );
     connect.release();
@@ -59,12 +59,20 @@ class OrdemServicoRepository {
     return removed.rowCount;
   }
 
-  static async atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id) {
+  static async atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id, warrantyDays) {
     const connect = await connection.connect();
-    const updated = await connect.query('UPDATE order_of_service SET estimate = $1, value = $2 WHERE cod_order = $3 AND tenant_id = $4', [estimateArray, totalPrice, cod, tenant_id]);
+    const updated = await connect.query('UPDATE order_of_service SET estimate = $1, value = $2, warranty_days = COALESCE($5, warranty_days) WHERE cod_order = $3 AND tenant_id = $4', [estimateArray, totalPrice, cod, tenant_id, warrantyDays ?? null]);
     connect.release();
     await this.recarregarDadosSocket(cod, tenant_id);
     return updated.rowCount;
+  }
+
+  static async atualizarGarantia(cod, tenant_id, warrantyDays) {
+    const connect = await connection.connect();
+    const updated = await connect.query('UPDATE order_of_service SET warranty_days = $1 WHERE cod_order = $2 AND tenant_id = $3 RETURNING cod_order, warranty_days', [warrantyDays, cod, tenant_id]);
+    connect.release();
+    await this.recarregarDadosSocket(cod, tenant_id);
+    return updated.rows[0] || null;
   }
 
   static async remover(cod_order, tenant_id) {

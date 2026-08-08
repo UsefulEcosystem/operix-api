@@ -109,6 +109,7 @@ function permission(
 const permissionCatalog: CatalogoPermissaoItem[] = [
   permission('painel.acesso', 'painel', 'Painel', 'Acessar a visão inicial do locatário.', '/painel'),
   permission('servicos.acesso', 'servicos', 'Serviços', 'Visualizar e operar serviços e orçamentos.', '/servicos'),
+  permission('clientes.acesso', 'servicos', 'Clientes', 'Cadastrar e gerenciar clientes.', '/clientes'),
   permission('status-servico.acesso', 'status-servico', 'Status de Serviço', 'Gerenciar status de serviço.', '/dados-basicos'),
   permission('status-pagamento.acesso', 'status-pagamento', 'Status de Pagamento', 'Gerenciar status de pagamento.', '/dados-basicos'),
   permission('tipos-produto.acesso', 'tipos-produto', 'Tipos de Produto', 'Gerenciar tipos de produto.', '/dados-basicos'),
@@ -129,12 +130,12 @@ const permissionCatalog: CatalogoPermissaoItem[] = [
 const authenticatedPermissaoKeys = ['painel.acesso'];
 
 const rolePermissaoMap: Record<string, string[]> = {
-  'modulo:servicos': ['servicos.acesso'],
+  'modulo:servicos': ['servicos.acesso', 'clientes.acesso'],
   'modulo:status-servico': ['status-servico.acesso'],
   'modulo:status-pagamento': ['status-pagamento.acesso'],
   'modulo:tipos-produto': ['tipos-produto.acesso'],
   'modulo:estoque': ['estoque.acesso'],
-  'modulo:vendas': ['vendas.acesso'],
+  'modulo:vendas': ['vendas.acesso', 'clientes.acesso'],
   'modulo:organizacao': ['usuarios.acesso', 'configuracoes.acesso', 'locatarios.acesso'],
   'modulo:notificacoes': ['notificacoes.acesso'],
 };

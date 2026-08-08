@@ -27,8 +27,8 @@ export default class OrdemServicoController {
       const estimateArray = JSON.parse(getOrderValue[0].estimate) || [];
       estimateArray.push({ id, amount: req.body.amount, description: req.body.description, price: req.body.price });
       let totalPrice = 0;
-      for (const record of estimateArray) totalPrice += record.price;
-      const updated = await OrdemServicoService.atualizarOrcamento(JSON.stringify(estimateArray), totalPrice, cod, tenant_id);
+      for (const record of estimateArray) totalPrice += Number(record.price || 0) * Number(record.amount || 1);
+      const updated = await OrdemServicoService.atualizarOrcamento(JSON.stringify(estimateArray), totalPrice, cod, tenant_id, req.body.warranty_days);
       return ManipuladorResposta.sucesso(res, updated, 'Orçamento atualizado com sucesso');
     } else {
       const removed = await OrdemServicoService.removerOrcamentoSimple(cod, tenant_id);
@@ -38,12 +38,18 @@ export default class OrdemServicoController {
         const estimateArray = JSON.parse(getOrderValue[0].estimate) || [];
         estimateArray.push({ id, amount: req.body.amount, description: req.body.description, price: req.body.price });
         let totalPrice = 0;
-        for (const record of estimateArray) totalPrice += record.price;
-        const updated = await OrdemServicoService.atualizarOrcamento(JSON.stringify(estimateArray), totalPrice, cod, tenant_id);
+        for (const record of estimateArray) totalPrice += Number(record.price || 0) * Number(record.amount || 1);
+        const updated = await OrdemServicoService.atualizarOrcamento(JSON.stringify(estimateArray), totalPrice, cod, tenant_id, req.body.warranty_days);
         return ManipuladorResposta.sucesso(res, updated, 'Orçamento simplificado atualizado com sucesso');
       }
       return ManipuladorResposta.erro(res, 'Erro ao atualizar orçamento simplificado', 422);
     }
+  }
+
+  static async atualizarGarantia(req: Request, res: Response) {
+    const { tenant_id } = (req as any).user;
+    const updated = await OrdemServicoService.atualizarGarantia(req.params.cod, tenant_id, req.body.warranty_days);
+    return ManipuladorResposta.sucesso(res, updated, 'Garantia do serviço atualizada com sucesso');
   }
 
   static async removerOrcamento(req: Request, res: Response) {

@@ -3,9 +3,11 @@ export type SaleItemCreateDto = {
   quantity: number;
   unit_price?: number;
   serial_number?: string | null;
+  warranty_days?: number;
 };
 
 export type SaleCreateDto = {
+  client_id?: number | null;
   customer_name: string;
   customer_document?: string | null;
   customer_phone?: string | null;

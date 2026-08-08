@@ -5,6 +5,7 @@ const orderOfServiceSchema = z.object({
   cod_order: z.union([z.string(), z.number()]),
   estimate: z.string().nullable().optional(),
   value: z.union([z.string(), z.number()]).nullable().optional(),
+  warranty_days: z.number().int().nonnegative().default(0),
   created_at: z.string().nullable(),
 }).openapi('OrdemServico');
 
@@ -19,12 +20,17 @@ const orderUpdateEstimateSchema = z.object({
   }
 }).openapi('OrderUpdateEstimate');
 
+const orderWarrantyUpdateSchema = z.object({
+  warranty_days: z.number().int().nonnegative(),
+}).openapi('OrderWarrantyUpdate');
+
 const orderOfServiceResponseSchema = buildApiResponseSchema(orderOfServiceSchema, 'OrdemServicoResponse');
 const orderOfServiceListResponseSchema = buildApiListResponseSchema(orderOfServiceSchema, 'OrdemServicoListResponse');
 
 export {
   orderOfServiceSchema,
   orderUpdateEstimateSchema,
+  orderWarrantyUpdateSchema,
   orderOfServiceResponseSchema,
   orderOfServiceListResponseSchema,
 };

@@ -15,7 +15,7 @@ class ServicosRepository {
     const connect = await connection.connect();
     try {
       const services = await connect.query(
-        `SELECT id, product, client, telephone, adress, status_id, payment_status_id,
+        `SELECT id, client_id, product, client, telephone, adress, status_id, payment_status_id,
                 order_of_service, observation, created_at, updated_at_service, updated_at_payment
          FROM services WHERE tenant_id = $1 ORDER BY id DESC`,
         [tenant_id],
@@ -30,7 +30,7 @@ class ServicosRepository {
     const connect = await connection.connect();
     try {
       const services = await connect.query(
-        `SELECT s.id, s.product, s.client, s.telephone, s.adress, s.status_id,
+        `SELECT s.id, s.client_id, s.product, s.client, s.telephone, s.adress, s.status_id,
                 s.payment_status_id, s.order_of_service, s.observation, s.created_at,
                 s.updated_at_service, s.updated_at_payment
          FROM services s
@@ -49,6 +49,7 @@ class ServicosRepository {
   static async criar(service) {
     const {
       tenant_id,
+      client_id,
       product,
       client,
       telephone,
@@ -63,9 +64,10 @@ class ServicosRepository {
 
     const connect = await connection.connect();
     const created = await connect.query(
-      "INSERT INTO services(tenant_id, product, client, telephone, adress, status_id, payment_status_id, order_of_service, observation, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+      "INSERT INTO services(tenant_id, client_id, product, client, telephone, adress, status_id, payment_status_id, order_of_service, observation, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
       [
         tenant_id,
+        client_id || null,
         product,
         client,
         telephone,
@@ -84,11 +86,11 @@ class ServicosRepository {
 
 
   static async atualizarInfoCliente(id, tenant_id, info) {
-    const { product, client, telephone, adress, observation } = info;
+    const { client_id, product, client, telephone, adress, observation } = info;
     const connect = await connection.connect();
     const updated = await connect.query(
-      "UPDATE services SET product = $1, client = $2, telephone = $3, adress = $4, observation = $5 WHERE id = $6 AND tenant_id = $7",
-      [product, client, telephone, adress, observation, id, tenant_id],
+      "UPDATE services SET client_id = $1, product = $2, client = $3, telephone = $4, adress = $5, observation = $6 WHERE id = $7 AND tenant_id = $8",
+      [client_id || null, product, client, telephone, adress, observation, id, tenant_id],
     );
     connect.release();
     await this.recarregarDadosSocket(tenant_id);

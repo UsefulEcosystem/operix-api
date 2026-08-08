@@ -18,6 +18,7 @@ import statusPagamentoRouter from '../modules/status-pagamento/status-pagamento.
 import tiposProdutoRouter from '../modules/tipos-produto/tipos-produto.routes.js';
 import notificacoesRouter from '../modules/notificacoes/notificacoes.routes.js';
 import pecasServicoRouter from '../modules/pecas-servico/pecas-servico.routes.js';
+import clientesRouter from '../modules/clientes/clientes.routes.js';
 
 const router = Router();
 const openApiDocument = generateOpenApiDocument();
@@ -48,5 +49,6 @@ router.use('/api', statusPagamentoRouter);
 router.use('/api', tiposProdutoRouter);
 router.use('/api', notificacoesRouter);
 router.use('/api', pecasServicoRouter);
+router.use('/api', clientesRouter);
 
 export default router;

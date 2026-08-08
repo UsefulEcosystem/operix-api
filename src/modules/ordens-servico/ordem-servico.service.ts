@@ -11,7 +11,8 @@ class OrdemServicoService {
     return order;
   }
 
-  static async atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id) { return OrdemServicoRepository.atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id); }
+  static async atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id, warrantyDays) { return OrdemServicoRepository.atualizarOrcamento(estimateArray, totalPrice, cod, tenant_id, warrantyDays); }
+  static async atualizarGarantia(cod, tenant_id, warrantyDays) { return OrdemServicoRepository.atualizarGarantia(cod, tenant_id, warrantyDays); }
   static async removerOrcamento(cod, tenant_id, idEstimate) { return OrdemServicoRepository.removerOrcamento(cod, tenant_id, idEstimate); }
   static async removerOrcamentoSimple(cod, tenant_id) { return OrdemServicoRepository.removerOrcamentoSimple(cod, tenant_id); }
 }

@@ -3,6 +3,7 @@ import { z } from '../../core/schemas/zod-openapi.js';
 
 const serviceSchema = z.object({
   id: z.number(),
+  client_id: z.number().nullable().optional(),
   product: z.string(),
   client: z.string(),
   telephone: z.string(),
@@ -17,9 +18,10 @@ const serviceSchema = z.object({
 }).openapi('Service');
 
 const serviceClientFieldsSchema = z.object({
+  client_id: z.coerce.number().int().positive().nullable().optional(),
   product: z.string().min(1, 'Campo "Produto" é obrigatório.'),
-  client: z.string().min(1, 'Campo "Cliente" é obrigatório.'),
-  telephone: z.string().min(1, 'Campo "Telefone" é obrigatório.'),
+  client: z.string().optional(),
+  telephone: z.string().optional(),
   adress: z.string().optional(),
   observation: z.string().optional(),
 });
