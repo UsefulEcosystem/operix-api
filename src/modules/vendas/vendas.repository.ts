@@ -2,7 +2,7 @@ import connection from '../../core/database/connection.js';
 import ErroValidacao from '../../core/utils/erro-validacao.js';
 import type { SaleCreateDto } from './vendas.dto.js';
 
-const saleProjection = 'id, client_id, customer_name, customer_document, customer_phone, total_amount, notes, sold_at';
+const saleProjection = 'id, client_id, customer_name, customer_document, customer_phone, attendant_user_id, total_amount, notes, sold_at';
 const itemProjection = 'id, stock_id, item_name, item_code, serial_number, quantity, unit_price, total_price, warranty_days';
 
 export default class VendasRepository {
@@ -10,7 +10,7 @@ export default class VendasRepository {
     const connect = await connection.connect();
     try {
       const result = await connect.query(
-        `SELECT s.id, s.client_id, s.customer_name, s.customer_document, s.customer_phone, s.total_amount, s.notes, s.sold_at,
+        `SELECT s.id, s.client_id, s.customer_name, s.customer_document, s.customer_phone, s.attendant_user_id, u.name AS attendant_user_name, s.total_amount, s.notes, s.sold_at,
                 COALESCE(
                   json_agg(json_build_object(
                     'id', si.id,
@@ -26,9 +26,10 @@ export default class VendasRepository {
                   '[]'
                 ) AS items
          FROM sales s
+         LEFT JOIN users u ON u.id = s.attendant_user_id AND u.tenant_id = s.tenant_id
          LEFT JOIN sale_items si ON si.sale_id = s.id AND si.tenant_id = s.tenant_id
          WHERE s.tenant_id = $1
-         GROUP BY s.id
+         GROUP BY s.id, u.name
          ORDER BY s.sold_at DESC, s.id DESC`,
         [tenantId],
       );
@@ -42,7 +43,7 @@ export default class VendasRepository {
     const connect = await connection.connect();
     try {
       const saleResult = await connect.query(
-        `SELECT ${saleProjection} FROM sales WHERE id = $1 AND tenant_id = $2`,
+        `SELECT s.id, s.client_id, s.customer_name, s.customer_document, s.customer_phone, s.attendant_user_id, u.name AS attendant_user_name, s.total_amount, s.notes, s.sold_at FROM sales s LEFT JOIN users u ON u.id = s.attendant_user_id AND u.tenant_id = s.tenant_id WHERE s.id = $1 AND s.tenant_id = $2`,
         [id, tenantId],
       );
       const sale = saleResult.rows[0];
@@ -68,10 +69,10 @@ export default class VendasRepository {
       const soldAt = data.sold_at ? new Date(data.sold_at) : new Date();
       const saleResult = await connect.query(
         `INSERT INTO sales
-         (tenant_id, client_id, customer_name, customer_document, customer_phone, total_amount, status, notes, sold_at, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, 0, 'completed', $6, $7, NOW(), NOW())
+         (tenant_id, client_id, customer_name, customer_document, customer_phone, attendant_user_id, total_amount, status, notes, sold_at, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, 0, 'completed', $7, $8, NOW(), NOW())
          RETURNING ${saleProjection}`,
-        [tenantId, data.client_id || null, data.customer_name, data.customer_document || null, data.customer_phone || null, data.notes || null, soldAt],
+        [tenantId, data.client_id || null, data.customer_name, data.customer_document || null, data.customer_phone || null, data.attendant_user_id || null, data.notes || null, soldAt],
       );
       const sale = saleResult.rows[0];
       const items = [];

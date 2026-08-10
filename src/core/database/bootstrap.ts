@@ -4,11 +4,11 @@ import path from 'node:path';
 function runMigrations() {
   return new Promise<void>((resolve, reject) => {
     const cliPath = path.resolve(process.cwd(), 'node_modules', 'sequelize-cli', 'lib', 'sequelize');
-    const child = spawn('node', [cliPath, 'db:migrate'], {
+    const child = spawn('node', [cliPath, 'db:migrate', '--debug'], {
       cwd: process.cwd(),
       env: process.env,
       stdio: 'inherit',
-      shell: true
+      shell: false
     });
 
     child.on('error', reject);

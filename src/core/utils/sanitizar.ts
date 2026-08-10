@@ -12,6 +12,8 @@ type UserLike = {
   roles?: string[] | null;
   avatar_url?: string | null;
   role_title?: string | null;
+  role_id?: number | null;
+  role_name?: string | null;
   active?: boolean | null;
   preferences?: Record<string, unknown> | null;
   createdAt?: string | Date | null;
@@ -37,6 +39,8 @@ export function sanitizarUsuario(user: UserLike | null | undefined) {
     roles: user.roles || [],
     avatar_url: user.avatar_url ?? null,
     role_title: user.role_title ?? null,
+    role_id: user.role_id ?? null,
+    role_name: user.role_name ?? user.role_title ?? null,
     active: user.active ?? true,
     preferences: user.preferences || {},
     createdAt: user.createdAt ?? null,

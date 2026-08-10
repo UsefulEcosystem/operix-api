@@ -12,6 +12,7 @@ const serviceSchema = z.object({
   payment_status_id: z.number().nullable(),
   order_of_service: z.number().nullable(),
   observation: z.string().nullable().optional(),
+  responsible_user_id: z.number().int().positive().nullable().optional(),
   created_at: z.string().nullable(),
   updated_at_service: z.string().nullable(),
   updated_at_payment: z.string().nullable(),
@@ -24,6 +25,7 @@ const serviceClientFieldsSchema = z.object({
   telephone: z.string().optional(),
   adress: z.string().optional(),
   observation: z.string().optional(),
+  responsible_user_id: z.coerce.number().int().positive().nullable().optional(),
 });
 
 const serviceCreateSchema = serviceClientFieldsSchema.extend({

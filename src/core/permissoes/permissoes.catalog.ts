@@ -23,7 +23,7 @@ const manageableModuleKeys = [
   'tipos-produto',
   'estoque',
   'vendas',
-  'organizacao',
+  'ponto',
   'notificacoes',
 ] as const;
 
@@ -82,6 +82,12 @@ const moduleCatalog: ModuleCatalogItem[] = [
     description: 'Alertas e informações internas do sistema.',
     role_key: 'modulo:notificacoes',
   },
+  {
+    key: 'ponto',
+    label: 'Ponto',
+    description: 'Registros de jornada e solicitações de ajuste.',
+    role_key: 'modulo:ponto',
+  },
 ];
 
 const moduleMap = new Map(moduleCatalog.map((module) => [module.key, module]));
@@ -116,8 +122,11 @@ const permissionCatalog: CatalogoPermissaoItem[] = [
   permission('estoque.acesso', 'estoque', 'Estoque', 'Cadastrar, consultar e atualizar itens do estoque.', '/estoque'),
   permission('vendas.acesso', 'vendas', 'Vendas', 'Registrar vendas e baixar itens do estoque.', '/vendas'),
   permission('usuarios.acesso', 'organizacao', 'Usuários', 'Administrar usuários do locatário.', '/usuarios'),
+  permission('cargos.acesso', 'organizacao', 'Cargos', 'Administrar cargos dos usuários.', '/configuracoes'),
   permission('configuracoes.acesso', 'organizacao', 'Configurações', 'Administrar perfil e dados da empresa.', '/configuracoes'),
   permission('locatarios.acesso', 'organizacao', 'Unidades', 'Administrar unidades da organização.', null),
+  permission('fornecedores.acesso', 'estoque', 'Fornecedores', 'Administrar fornecedores e dados de abastecimento.', '/dados-basicos'),
+  permission('ponto.acesso', 'ponto', 'Ponto', 'Gerenciar lançamentos e ajustes de ponto.', '/ponto'),
   permission(
     'notificacoes.acesso',
     'notificacoes',
@@ -130,17 +139,18 @@ const permissionCatalog: CatalogoPermissaoItem[] = [
 const authenticatedPermissaoKeys = ['painel.acesso'];
 
 const rolePermissaoMap: Record<string, string[]> = {
-  'modulo:servicos': ['servicos.acesso', 'clientes.acesso'],
+  'modulo:servicos': ['servicos.acesso', 'clientes.acesso', 'ponto.acesso'],
   'modulo:status-servico': ['status-servico.acesso'],
   'modulo:status-pagamento': ['status-pagamento.acesso'],
   'modulo:tipos-produto': ['tipos-produto.acesso'],
-  'modulo:estoque': ['estoque.acesso'],
+  'modulo:estoque': ['estoque.acesso', 'fornecedores.acesso'],
   'modulo:vendas': ['vendas.acesso', 'clientes.acesso'],
-  'modulo:organizacao': ['usuarios.acesso', 'configuracoes.acesso', 'locatarios.acesso'],
+  'modulo:organizacao': ['usuarios.acesso', 'cargos.acesso', 'configuracoes.acesso', 'locatarios.acesso'],
+  'modulo:ponto': ['ponto.acesso'],
   'modulo:notificacoes': ['notificacoes.acesso'],
 };
 
-const manageableModuleCatalog = moduleCatalog.filter((module) => module.role_key);
+const manageableModuleCatalog = moduleCatalog.filter((module) => module.role_key && module.key !== 'organizacao');
 
 function obterCatalogooPermissao() {
   return [...permissionCatalog];

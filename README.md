@@ -164,7 +164,7 @@ validação HTTP e DTOs de contrato próprios. As decisões da refatoração est
 | Variável | Descrição | Exemplo Padrão |
 |----------|-----------|----------------|
 | `DEPLOYMENT_MODE` | Modo da API (`LOCAL` ou `SAAS`) | `LOCAL` |
-| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql://admin:admin@localhost:5432/opeflow` |
+| `DATABASE_URL` | String de conexão do PostgreSQL | `postgresql://admin:admin@127.0.0.1:5432/opeflow` |
 | `FRONTEND_URL` | URL de origem do painel frontend | `http://localhost:5173` |
 | `JWT_SECRET` | Segredo de assinatura de Tokens | `change-this-secret-in-production` |
 | `ACCESS_TOKEN_TTL_SECONDS` | Tempo de expiração do Token de Acesso | `900` (15 min) |

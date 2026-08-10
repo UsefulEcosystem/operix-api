@@ -7,6 +7,7 @@ export type SaleItemCreateDto = {
 };
 
 export type SaleCreateDto = {
+  attendant_user_id?: number | null;
   client_id?: number | null;
   customer_name: string;
   customer_document?: string | null;

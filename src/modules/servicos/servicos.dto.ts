@@ -4,6 +4,7 @@ export type ServiceClientUpdateDto = {
   telephone: string;
   adress?: string;
   observation?: string;
+  responsible_user_id?: number | null;
 };
 
 export type ServiceCreateDto = ServiceClientUpdateDto & {

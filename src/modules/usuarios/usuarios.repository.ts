@@ -5,7 +5,10 @@ class UsuariosRepository {
   static async obterTodos(tenantId: number) {
     const connect = await connection.connect();
     const result = await connect.query(
-      'SELECT id, name, username, email, tenant_id, admin, root, avatar_url, role_title, active, preferences FROM users WHERE tenant_id = $1 ORDER BY id',
+      `SELECT u.id, u.name, u.username, u.email, u.tenant_id, u.admin, u.root, u.avatar_url,
+              u.role_id, COALESCE(r.name, u.role_title) AS role_title, r.name AS role_name, u.active, u.preferences
+       FROM users u LEFT JOIN roles r ON r.id = u.role_id
+       WHERE u.tenant_id = $1 ORDER BY u.id`,
       [tenantId],
     );
     connect.release();
@@ -14,14 +17,14 @@ class UsuariosRepository {
 
   static async getById(user: UsuarioModel, tenantId: number) {
     const connect = await connection.connect();
-    const result = await connect.query('SELECT * FROM users WHERE id = $1 AND tenant_id = $2', [user.id, tenantId]);
+    const result = await connect.query('SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1 AND u.tenant_id = $2', [user.id, tenantId]);
     connect.release();
     return result.rows;
   }
 
   static async findByIdAndTenantId(id: number, tenantId: number) {
     const connect = await connection.connect();
-    const result = await connect.query('SELECT * FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    const result = await connect.query('SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1 AND u.tenant_id = $2', [id, tenantId]);
     connect.release();
     return result.rows[0] || null;
   }
@@ -37,8 +40,8 @@ class UsuariosRepository {
     const connect = await connection.connect();
     const result = await connect.query(
       `INSERT INTO users
-       (tenant_id, name, username, email, password, root, admin, avatar_url, role_title, active, preferences, onboarding_completed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, COALESCE($10, true), COALESCE($11, '{}'::jsonb), CASE WHEN $6 THEN NULL ELSE NOW() END)
+       (tenant_id, name, username, email, password, root, admin, avatar_url, role_title, role_id, active, preferences, onboarding_completed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, true), COALESCE($12, '{}'::jsonb), CASE WHEN $6 THEN NULL ELSE NOW() END)
        RETURNING *`,
       [
         user.tenant_id,
@@ -50,6 +53,7 @@ class UsuariosRepository {
         user.admin,
         user.avatar_url || null,
         user.role_title || null,
+        user.role_id || null,
         user.active,
         JSON.stringify(user.preferences || {}),
       ],
@@ -67,6 +71,7 @@ class UsuariosRepository {
            username = $4,
            root = true,
            admin = true,
+           role_id = (SELECT id FROM roles WHERE name = 'Proprietário' AND is_system = true LIMIT 1),
            active = true,
            "updatedAt" = NOW()
        WHERE id = $1
@@ -109,14 +114,14 @@ class UsuariosRepository {
   static async atualizarPerfil(id: number, tenantId: number, data: Partial<UsuarioModel>) {
     const connect = await connection.connect();
     const result = await connect.query(
-      `UPDATE users
+      `UPDATE users u
        SET name = COALESCE($3, name),
            avatar_url = $4,
            role_title = COALESCE($5, role_title),
            preferences = COALESCE($6, preferences),
            "updatedAt" = NOW()
        WHERE id = $1 AND tenant_id = $2
-       RETURNING id, name, username, email, tenant_id, admin, root, avatar_url, role_title, active, preferences`,
+       RETURNING id, name, username, email, tenant_id, admin, root, avatar_url, role_id, role_title, active, preferences`,
       [
         id,
         tenantId,
@@ -138,10 +143,11 @@ class UsuariosRepository {
            root = COALESCE($4, root),
            active = COALESCE($5, active),
            role_title = COALESCE($6, role_title),
+           role_id = COALESCE($7, role_id),
            "updatedAt" = NOW()
        WHERE id = $1 AND tenant_id = $2
-       RETURNING id, name, username, email, tenant_id, admin, root, avatar_url, role_title, active, preferences`,
-      [id, tenantId, data.admin ?? null, data.root ?? null, data.active ?? null, data.role_title || null],
+       RETURNING id, name, username, email, tenant_id, admin, root, avatar_url, role_id, role_title, active, preferences`,
+      [id, tenantId, data.admin ?? null, data.root ?? null, data.active ?? null, data.role_title || null, data.role_id || null],
     );
     connect.release();
     return result.rows[0] || null;
@@ -149,14 +155,14 @@ class UsuariosRepository {
 
   static async findById(id: number) {
     const connect = await connection.connect();
-    const result = await connect.query('SELECT * FROM users WHERE id = $1', [id]);
+    const result = await connect.query('SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.id = $1', [id]);
     connect.release();
     return result.rows[0] || null;
   }
 
   static async findByEmail(email: string) {
     const connect = await connection.connect();
-    const result = await connect.query('SELECT * FROM users WHERE email = $1', [email]);
+    const result = await connect.query('SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.email = $1', [email]);
     connect.release();
     return result.rows[0] || null;
   }
@@ -164,7 +170,7 @@ class UsuariosRepository {
   static async findByUsernameInTenant(username: string, tenantId: number) {
     const connect = await connection.connect();
     const result = await connect.query(
-      'SELECT * FROM users WHERE tenant_id = $1 AND LOWER(username) = LOWER($2)',
+      'SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title FROM users u LEFT JOIN roles r ON r.id = u.role_id WHERE u.tenant_id = $1 AND LOWER(u.username) = LOWER($2)',
       [tenantId, username],
     );
     connect.release();
@@ -174,9 +180,10 @@ class UsuariosRepository {
   static async findByInternalLogin(accessCode: string, username: string) {
     const connect = await connection.connect();
     const result = await connect.query(
-      `SELECT u.*
+      `SELECT u.*, r.name AS role_name, COALESCE(r.name, u.role_title) AS role_title
        FROM users u
        INNER JOIN tenants t ON t.id = u.tenant_id
+       LEFT JOIN roles r ON r.id = u.role_id
        WHERE t.access_code = $1 AND LOWER(u.username) = LOWER($2)`,
       [accessCode, username],
     );

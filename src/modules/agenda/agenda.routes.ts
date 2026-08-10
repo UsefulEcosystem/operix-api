@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import PermissoesMiddleware from '../../core/middlewares/permissoes.middleware.js';
+import ValidacaoMiddleware from '../../core/middlewares/validacao.middleware.js';
+import AgendaController from './agenda.controller.js';
+import { agendaTaskCreateSchema, agendaTaskUpdateSchema } from './agenda.schema.js';
+const router = Router();
+const access = PermissoesMiddleware.exigirPermissao('painel.acesso');
+router.get('/agenda', access, AgendaController.listar);
+router.post('/agenda', access, ValidacaoMiddleware.validarSchema(agendaTaskCreateSchema), AgendaController.criar);
+router.put('/agenda/:id', access, ValidacaoMiddleware.validarSchema(agendaTaskUpdateSchema), AgendaController.atualizar);
+router.delete('/agenda/:id', access, AgendaController.remover);
+export default router;

@@ -3,6 +3,7 @@ export type StockWriteDto = {
   code: string;
   description?: string | null;
   supplier_name?: string | null;
+  supplier_id?: number | null;
   quantity: number;
   purchasePrice: number;
   salePrice: number;

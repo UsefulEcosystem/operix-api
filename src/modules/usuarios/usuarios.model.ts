@@ -10,6 +10,8 @@ export default class UsuarioModel {
   root?: boolean | null;
   avatar_url?: string | null;
   role_title?: string | null;
+  role_id?: number | null;
+  role_name?: string | null;
   active?: boolean | null;
   preferences?: Record<string, unknown> | null;
 
@@ -23,6 +25,8 @@ export default class UsuarioModel {
     root = false,
     avatar_url = null,
     role_title = null,
+    role_id = null,
+    role_name = null,
     active = true,
     preferences = {},
     tenant = null,
@@ -37,6 +41,8 @@ export default class UsuarioModel {
     this.root = root;
     this.avatar_url = avatar_url;
     this.role_title = role_title;
+    this.role_id = role_id;
+    this.role_name = role_name;
     this.active = active;
     this.preferences = preferences;
     this.tenant = tenant;
@@ -57,6 +63,7 @@ export default class UsuarioModel {
         root: body.root || false,
         avatar_url: body.avatar_url || null,
         role_title: body.role_title || null,
+        role_id: body.role_id || null,
         active: body.active ?? true,
         preferences: body.preferences || {},
       }
@@ -79,6 +86,8 @@ export default class UsuarioModel {
       root: this.root,
       avatar_url: this.avatar_url,
       role_title: this.role_title,
+      role_id: this.role_id,
+      role_name: this.role_name,
       active: this.active,
       preferences: this.preferences,
     };

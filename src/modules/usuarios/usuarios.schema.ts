@@ -13,6 +13,8 @@ const userSchema = z.object({
   root: z.boolean().nullable().optional(),
   avatar_url: z.string().nullable().optional(),
   role_title: z.string().nullable().optional(),
+  role_id: z.number().nullable().optional(),
+  role_name: z.string().nullable().optional(),
   active: z.boolean().nullable().optional(),
   preferences: z.record(z.string(), z.any()).nullable().optional(),
   name: z.string().min(1),
@@ -41,6 +43,7 @@ const userCreateSchema = z.object({
   password: z.string().min(8, 'Campo "Senha" deve ter no mínimo 8 caracteres.'),
   admin: z.boolean().optional().default(false),
   role_title: z.string().optional().nullable(),
+  role_id: z.number().int().positive('Cargo inválido.').optional().nullable(),
   modules: z.array(z.enum(manageableModuleKeys)).optional().default([]),
 }).openapi('UserCreate');
 
@@ -49,6 +52,7 @@ const userAccessUpdateSchema = z.object({
   root: z.boolean().optional(),
   active: z.boolean().optional(),
   role_title: z.string().optional().nullable(),
+  role_id: z.number().int().positive('Cargo inválido.').optional().nullable(),
 }).openapi('UserAccessUpdate');
 
 const userListResponseSchema = buildApiListResponseSchema(userPublicSchema, 'UserListResponse');

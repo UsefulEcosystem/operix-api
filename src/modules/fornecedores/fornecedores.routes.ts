@@ -1,0 +1,12 @@
+import { Router } from 'express';
+import PermissoesMiddleware from '../../core/middlewares/permissoes.middleware.js';
+import ValidacaoMiddleware from '../../core/middlewares/validacao.middleware.js';
+import FornecedoresController from './fornecedores.controller.js';
+import { fornecedorCreateSchema, fornecedorUpdateSchema } from './fornecedores.schema.js';
+const router = Router();
+const access = PermissoesMiddleware.exigirPermissao('fornecedores.acesso');
+router.get('/fornecedores', access, FornecedoresController.listar);
+router.post('/fornecedores', access, ValidacaoMiddleware.validarSchema(fornecedorCreateSchema), FornecedoresController.criar);
+router.put('/fornecedores/:id', access, ValidacaoMiddleware.validarSchema(fornecedorUpdateSchema), FornecedoresController.atualizar);
+router.delete('/fornecedores/:id', access, FornecedoresController.remover);
+export default router;

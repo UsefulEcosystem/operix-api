@@ -2,8 +2,21 @@ import type { Request, Response } from 'express';
 import ServicosService from './servicos.service.js';
 import ManipuladorResposta from '../../core/utils/manipulador-resposta.js';
 import MensageriaService from '../../core/utils/mensageria.service.js';
+import StatusServicoService from '../status-servico/status-servico.service.js';
 
 export default class ServicosController {
+  static async listarPainelExterno(req: Request, res: Response) {
+    const user = (req as any).user;
+    const services = await ServicosService.listarPainelExterno(user.tenant_id, Number(req.query.responsible_user_id || user.id), req.query.status_id ? Number(req.query.status_id) : undefined);
+    const [technicians, statuses] = await Promise.all([ServicosService.tecnicosPainelExterno(user.tenant_id), StatusServicoService.obterTodos(user.tenant_id)]);
+    return ManipuladorResposta.sucesso(res, { services, technicians, statuses }, 'OS listadas com sucesso');
+  }
+
+  static async obterPainelExterno(req: Request, res: Response) {
+    const user = (req as any).user;
+    return ManipuladorResposta.sucesso(res, await ServicosService.obterPainelExterno(Number(req.params.cod), user.tenant_id, Number(req.query.responsible_user_id || user.id)), 'OS carregada com sucesso');
+  }
+
   static async obterTodos(req: Request, res: Response) {
     const { tenant_id } = (req as any).user;
     const services = await ServicosService.obterTodos(tenant_id);

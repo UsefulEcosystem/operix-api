@@ -30,6 +30,8 @@ type JwtPayload = {
   roles: string[];
   admin: boolean;
   root: boolean;
+  role_id?: number | null;
+  role_name?: string | null;
   jti: string;
 };
 
@@ -451,12 +453,17 @@ export default class AutenticacaoService {
       throw new ErroValidacao('Usuário inativo ou inexistente.', 401);
     }
 
+    if (payload.external && Number(payload.external_access_version) !== Number(user.external_access_version || 0)) {
+      throw new ErroValidacao('Acesso externo revogado.', 401);
+    }
+
     const roles = PermissoesService.obterRolesLocais(user);
     return {
       ...user,
       sub: String(user.id),
       roles,
       tenant_id: user.tenant_id,
+      external: Boolean(payload.external),
     };
   }
 
@@ -486,6 +493,8 @@ export default class AutenticacaoService {
         roles,
         admin: Boolean(user.admin),
         root: Boolean(user.root),
+        role_id: user.role_id || null,
+        role_name: user.role_name || user.role_title || null,
         jti,
         nbf: now,
       },

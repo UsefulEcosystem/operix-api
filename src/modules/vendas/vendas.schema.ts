@@ -10,6 +10,7 @@ const saleItemCreateSchema = z.object({
 }).openapi('SaleItemCreate');
 
 const saleCreateSchema = z.object({
+  attendant_user_id: z.number().int().positive('Atendente é obrigatório.'),
   client_id: z.number().int().positive().nullable().optional(),
   customer_name: z.string().min(1, 'Campo "Cliente" é obrigatório.'),
   customer_document: z.string().max(40).optional().nullable(),
@@ -40,6 +41,8 @@ const saleSchema = z.object({
   total_amount: z.union([z.number(), z.string()]),
   notes: z.string().nullable(),
   sold_at: z.string().or(z.date()),
+  attendant_user_id: z.number().nullable().optional(),
+  attendant_user_name: z.string().nullable().optional(),
   items: z.array(saleItemSchema),
 }).openapi('Sale');
 

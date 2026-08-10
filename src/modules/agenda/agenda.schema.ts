@@ -1,0 +1,9 @@
+import { z } from '../../core/schemas/zod-openapi.js';
+import { buildApiListResponseSchema, buildApiResponseSchema } from '../../core/schemas/api-response.schema.js';
+const agendaTaskSchema = z.object({ id: z.number(), occurrence_key: z.string().optional(), title: z.string(), description: z.string().nullable(), starts_at: z.string().or(z.date()), ends_at: z.string().nullable().or(z.date()), completed: z.boolean(), color: z.string(), service_id: z.number().nullable(), sale_id: z.number().nullable(), recurrence_rule: z.enum(['none', 'daily', 'weekly', 'monthly']), recurrence_until: z.string().nullable().optional(), order_of_service: z.number().nullable().optional(), service_client: z.string().nullable().optional(), sale_customer_name: z.string().nullable().optional() }).openapi('AgendaTask');
+const agendaTaskWriteSchema = z.object({ title: z.string().trim().min(1, 'Título é obrigatório.').max(180), description: z.string().max(5000).optional().nullable(), starts_at: z.string().datetime(), ends_at: z.string().datetime().optional().nullable(), completed: z.boolean().optional(), color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Cor inválida.').optional().default('#3B82F6'), service_id: z.number().int().positive().optional().nullable(), sale_id: z.number().int().positive().optional().nullable(), recurrence_rule: z.enum(['none', 'daily', 'weekly', 'monthly']).optional().default('none'), recurrence_until: z.string().date().optional().nullable() });
+const agendaTaskCreateSchema = agendaTaskWriteSchema.openapi('AgendaTaskCreate');
+const agendaTaskUpdateSchema = agendaTaskWriteSchema.openapi('AgendaTaskUpdate');
+const agendaTaskListResponseSchema = buildApiListResponseSchema(agendaTaskSchema, 'AgendaTaskListResponse');
+const agendaTaskResponseSchema = buildApiResponseSchema(agendaTaskSchema, 'AgendaTaskResponse');
+export { agendaTaskSchema, agendaTaskCreateSchema, agendaTaskUpdateSchema, agendaTaskListResponseSchema, agendaTaskResponseSchema };

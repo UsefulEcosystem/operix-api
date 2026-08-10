@@ -16,8 +16,12 @@ import {
   authCheckEmailSchema,
   onboardingSchema,
 } from './autenticacao.schema.js';
+import AcessoExternoController from '../../modules/acesso-externo/acesso-externo.controller.js';
+import { externalTokenSchema } from '../../modules/acesso-externo/acesso-externo.schema.js';
 
 const router = Router();
+
+router.post('/acesso-externo/trocar', ValidacaoMiddleware.validarSchema(externalTokenSchema), AcessoExternoController.trocar);
 
 router.get('/configuracao', AutenticacaoController.config);
 

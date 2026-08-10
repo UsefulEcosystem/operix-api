@@ -19,6 +19,12 @@ import tiposProdutoRouter from '../modules/tipos-produto/tipos-produto.routes.js
 import notificacoesRouter from '../modules/notificacoes/notificacoes.routes.js';
 import pecasServicoRouter from '../modules/pecas-servico/pecas-servico.routes.js';
 import clientesRouter from '../modules/clientes/clientes.routes.js';
+import cargosRouter from '../modules/cargos/cargos.routes.js';
+import fornecedoresRouter from '../modules/fornecedores/fornecedores.routes.js';
+import agendaRouter from '../modules/agenda/agenda.routes.js';
+import acessoExternoRouter from '../modules/acesso-externo/acesso-externo.routes.js';
+import pontoRouter from '../modules/ponto/ponto.routes.js';
+import limitarAcessoExterno from './middlewares/acesso-externo.middleware.js';
 
 const router = Router();
 const openApiDocument = generateOpenApiDocument();
@@ -34,6 +40,7 @@ router.use('/api/autenticacao', authRouter);
 
 // Middleware global de autenticação JWT
 router.use('/api', AutenticacaoMiddleware.autenticarToken);
+router.use('/api', limitarAcessoExterno);
 
 router.use('/api', profileRouter);
 router.use('/api', usersRouter);
@@ -50,5 +57,10 @@ router.use('/api', tiposProdutoRouter);
 router.use('/api', notificacoesRouter);
 router.use('/api', pecasServicoRouter);
 router.use('/api', clientesRouter);
+router.use('/api', cargosRouter);
+router.use('/api', fornecedoresRouter);
+router.use('/api', agendaRouter);
+router.use('/api', acessoExternoRouter);
+router.use('/api', pontoRouter);
 
 export default router;

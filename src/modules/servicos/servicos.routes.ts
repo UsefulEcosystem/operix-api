@@ -11,6 +11,8 @@ import {
 
 const router = Router();
 
+router.get('/servicos/painel-externo', PermissoesMiddleware.exigirPermissao('servicos.acesso'), ServicosController.listarPainelExterno);
+router.get('/servicos/painel-externo/:cod', PermissoesMiddleware.exigirPermissao('servicos.acesso'), ServicosController.obterPainelExterno);
 router.get('/servicos', PermissoesMiddleware.exigirPermissao('servicos.acesso'), ServicosController.obterTodos);
 router.post(
   '/servicos',

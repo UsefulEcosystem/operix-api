@@ -6,6 +6,7 @@ import argon2 from 'argon2';
 import { obterCatalogooPermissao } from '../../core/permissoes/permissoes.catalog.js';
 import PermissoesRepository from '../../core/permissoes/permissoes.repository.js';
 import { sanitizarUsuario } from '../../core/utils/sanitizar.js';
+import CargosRepository from '../cargos/cargos.repository.js';
 
 export default class UsuariosService {
   static async obterTodos(tenantId: number) {
@@ -42,6 +43,13 @@ export default class UsuariosService {
 
     const passwordHash = await argon2.hash(user.password || '');
 
+    const requestedRole = user.role_id
+      ? await CargosRepository.buscar(user.role_id, tenant.id)
+      : await CargosRepository.buscarSistemaPorNome(user.admin ? 'Administrador' : 'Atendente');
+    if (!requestedRole) {
+      throw new ErroValidacao('Cargo não encontrado.', 422);
+    }
+
     const persistedUser = await UsuariosRepository.criar({
       ...user,
       username: normalizedUsername,
@@ -49,6 +57,7 @@ export default class UsuariosService {
       tenant: tenant.name,
       tenant_id: tenant.id,
       password: passwordHash,
+      role_id: requestedRole.id,
     } as UsuarioModel);
 
     if (!persistedUser.admin && moduleKeys.length > 0) {
@@ -91,6 +100,11 @@ export default class UsuariosService {
 
     if (usuarioAlvo.root && !actor.root) {
       throw new ErroValidacao('Somente o proprietário pode alterar outro proprietário.', 403);
+    }
+
+    if (data.role_id) {
+      const role = await CargosRepository.buscar(data.role_id, actor.tenant_id);
+      if (!role) throw new ErroValidacao('Cargo não encontrado.', 422);
     }
 
     const updated = await UsuariosRepository.atualizarAcessoUsuario(usuarioAlvoId, actor.tenant_id, data);
